@@ -1,5 +1,5 @@
 {
-  "app": "npx ts-node --prefer-ts-exts bin/short_ur_ls.ts",
+  "app": "npx ts-node --prefer-ts-exts bin/short_urls.ts",
   "watch": {
     "include": [
       "**"

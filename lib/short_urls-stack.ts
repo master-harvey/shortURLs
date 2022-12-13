@@ -3,7 +3,8 @@ import {
   aws_certificatemanager as cm, aws_iam as iam,
   aws_codebuild as cbd, aws_codepipeline_actions as cpa,
   aws_s3 as s3, aws_lambda as lambda, aws_cloudfront as cf,
-  aws_codepipeline as codepipeline, aws_secretsmanager as sm
+  aws_codepipeline as codepipeline, aws_secretsmanager as sm,
+  aws_route53 as r53,
 } from 'aws-cdk-lib';
 import { Construct } from 'constructs';
 
@@ -24,7 +25,8 @@ export class ShortUrlsStack extends Stack {
     })
 
     //S3 Deployment Bucket
-    const sourceBucket = new s3.Bucket(scope, 'Bucket', {
+    const sourceBucket = new s3.Bucket(this, 'Bucket', {
+      bucketName: `shorturls--ui-deployment`,
       blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
       encryption: s3.BucketEncryption.S3_MANAGED,
       removalPolicy: RemovalPolicy.RETAIN,
@@ -39,7 +41,6 @@ export class ShortUrlsStack extends Stack {
         "redirect-manager": new iam.PolicyDocument({
           statements: [new iam.PolicyStatement({
             actions: ['s3:PutObject', 's3:DeleteObject'],
-            principals: [lambdaServicePrincipal],
             resources: [sourceBucket.bucketArn],
           })],
         })
@@ -48,7 +49,8 @@ export class ShortUrlsStack extends Stack {
 
     //Lambda w/ function URL
     const lamb = new lambda.Function(this, 'Function', {
-      code: lambda.Code.fromAsset('./lambda/handler.py'),
+      functionName: "shortURLs-manager",
+      code: lambda.Code.fromAsset('./lambda'),
       runtime: lambda.Runtime.PYTHON_3_8, role,
       handler: 'main.handler', environment: { "bucketARN": sourceBucket.bucketArn }
     });
@@ -60,10 +62,11 @@ export class ShortUrlsStack extends Stack {
     })
 
     //Cloudfront + Cert
+    const zone = new r53.HostedZone(this, "HostedZone", { zoneName: this.node.tryGetContext('URL') })
     const cert = new cm.Certificate(this, "UI-Cert", {
       domainName: this.node.tryGetContext('URL'),
       certificateName: 'shortURLs-UI',
-      validation: cm.CertificateValidation.fromDns()
+      validation: cm.CertificateValidation.fromDns(zone)
     })
     const distribution = new cf.CloudFrontWebDistribution(this, 'Distribution', {
       viewerCertificate: {
@@ -85,7 +88,7 @@ export class ShortUrlsStack extends Stack {
 
     /*  -- Begin UI Deployment Pipeline --  */
     const artifacts = new s3.Bucket(this, "ArtifactBucket", {
-      bucketName: `shortURLs--ui-deployment-artifacts`,
+      bucketName: `shorturls--ui-artifacts`,
       autoDeleteObjects: true,
       removalPolicy: RemovalPolicy.DESTROY
     })

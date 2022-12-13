@@ -4,4 +4,4 @@ import * as cdk from 'aws-cdk-lib';
 import { ShortUrlsStack } from '../lib/short_urls-stack';
 
 const app = new cdk.App();
-new ShortUrlsStack(app, 'ShortUrLsStack', {});
+new ShortUrlsStack(app, 'ShortUrlsStack', {});

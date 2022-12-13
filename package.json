@@ -1,8 +1,8 @@
 {
-  "name": "short_ur_ls",
+  "name": "short_urls",
   "version": "0.1.0",
   "bin": {
-    "short_ur_ls": "bin/short_ur_ls.js"
+    "short_urls": "bin/short_urls.js"
   },
   "scripts": {
     "build": "tsc",
