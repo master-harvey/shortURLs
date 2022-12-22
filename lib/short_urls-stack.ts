@@ -19,7 +19,7 @@ export class ShortUrlsStack extends Stack {
       dockerEnabledForSelfMutation: true,
       dockerEnabledForSynth: true,
       synth: new pipelines.ShellStep('Synth', {
-        input: pipelines.CodePipelineSource.gitHub('master-harvey/shortURLs', 'Infra_Prod'),
+        input: pipelines.CodePipelineSource.gitHub('master-harvey/shortURLs-deployed', 'Infra_Prod'),
         commands: ['npm ci', 'npm run build', 'npx cdk synth']
       }),
     })
@@ -27,9 +27,7 @@ export class ShortUrlsStack extends Stack {
     //S3 Deployment Bucket
     const sourceBucket = new s3.Bucket(this, 'Bucket', {
       bucketName: `shorturls--ui-deployment`,
-      blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
-      encryption: s3.BucketEncryption.S3_MANAGED,
-      removalPolicy: RemovalPolicy.RETAIN,
+      removalPolicy: RemovalPolicy.DESTROY,
       enforceSSL: true
     });
 
