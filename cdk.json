@@ -17,6 +17,7 @@
     ]
   },
   "context": {
+    "URL":"url.m-a.cloud",
     "@aws-cdk/aws-lambda:recognizeLayerVersion": true,
     "@aws-cdk/core:checkSecretUsage": true,
     "@aws-cdk/core:target-partitions": [
