@@ -34,6 +34,7 @@ export class ShortUrlsStack extends Stack {
     const sourceBucket = new s3.Bucket(this, 'Bucket', {
       bucketName: `shorturls--ui-deployment`,
       removalPolicy: RemovalPolicy.DESTROY,
+      autoDeleteObjects: true,
       enforceSSL: true
     });
 
@@ -88,13 +89,13 @@ export class ShortUrlsStack extends Stack {
         },
       ],
     })
-
+    
 
     /*  -- Begin UI Deployment Pipeline --  */
     const artifacts = new s3.Bucket(this, "ArtifactBucket", {
       bucketName: `shorturls--ui-artifacts`,
-      autoDeleteObjects: true,
-      removalPolicy: RemovalPolicy.DESTROY
+      removalPolicy: RemovalPolicy.DESTROY,
+      autoDeleteObjects: true
     })
 
     const cPipeline = new codepipeline.Pipeline(this, "DeploymentPipeline", {
