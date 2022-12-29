@@ -67,7 +67,7 @@ export class ShortUrlsStack extends Stack {
     })
 
     //Cloudfront + Cert
-    const zone = new r53.HostedZone(this, "HostedZone", { zoneName: `shortURLs-${this.node.tryGetContext('URL')}` })
+    const zone = new r53.HostedZone(this, "HostedZone", { zoneName: this.node.tryGetContext('URL') })
     const cert = new cm.Certificate(this, "UI-Cert", {
       domainName: this.node.tryGetContext('URL'),
       certificateName: 'shortURLs-UI',
