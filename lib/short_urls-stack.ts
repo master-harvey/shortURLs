@@ -11,6 +11,12 @@ import { Construct } from 'constructs';
 export class ShortUrlsStack extends Stack {
   constructor(scope: Construct, id: string, props?: StackProps) {
     super(scope, id, props);
+    //  Check URL context
+    if(this.node.tryGetContext('URL') == "") {
+      throw("You did not supply the URL context variable, add it to cdk.json")
+    } else if(this.node.tryGetContext('URL').length < 4 || !this.node.tryGetContext('URL').includes('.')) {
+      throw("The URL context variable must be of the form yourURL.tld")
+    }
 
     //  CDK pipeline for this deployment
     const iPipeline = new pipelines.CodePipeline(this, 'Pipeline', {
@@ -19,7 +25,7 @@ export class ShortUrlsStack extends Stack {
       dockerEnabledForSelfMutation: true,
       dockerEnabledForSynth: true,
       synth: new pipelines.ShellStep('Synth', {
-        input: pipelines.CodePipelineSource.gitHub('master-harvey/shortURLs-deployed', 'Infra_Prod'),
+        input: pipelines.CodePipelineSource.gitHub('master-harvey/shortURLs', 'Infrastructure'),
         commands: ['npm ci', 'npm run build', 'npx cdk synth']
       }),
     })
@@ -60,7 +66,7 @@ export class ShortUrlsStack extends Stack {
     })
 
     //Cloudfront + Cert
-    const zone = new r53.HostedZone(this, "HostedZone", { zoneName: this.node.tryGetContext('URL') })
+    const zone = new r53.HostedZone(this, "HostedZone", { zoneName: `shortURLs-${this.node.tryGetContext('URL')}` })
     const cert = new cm.Certificate(this, "UI-Cert", {
       domainName: this.node.tryGetContext('URL'),
       certificateName: 'shortURLs-UI',
@@ -105,7 +111,7 @@ export class ShortUrlsStack extends Stack {
       actionName: "shortURLs--Pull-Source",
       owner: "master-harvey",
       repo: "shortURLs",
-      branch: "UI_Prod",
+      branch: "Interface",
       output: sourceCode,
       trigger: cpa.GitHubTrigger.WEBHOOK
     })
