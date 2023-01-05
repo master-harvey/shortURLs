@@ -2,8 +2,13 @@
 
 Use the AWS CDK to quickly deploy an S3 backed redirection machine. Use the UI or the lambda url to add and remove redirects.
 
-Add the URL variable to cdk.json, then deploy to your AWS account and default region using the AWS CDK using the command:
+To create your own URL shortening service in S3 simply clone the repo and use the commands:
 
- `cdk deploy`
+`npm i`
+
+`cdk deploy -c URL=your.URL`
+
+Then configure your DNS records using the output from the deployment.
+
 
 Thinking of adding authorized apigw to replace lambda+URL, frontend ui, etc
