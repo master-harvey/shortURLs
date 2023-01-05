@@ -26,6 +26,7 @@ export class ShortUrlsStack extends Stack {
       dockerEnabledForSynth: true,
       synth: new pipelines.ShellStep('Synth', {
         input: pipelines.CodePipelineSource.gitHub('master-harvey/shortURLs', 'Infrastructure'),
+        installCommands: ['npm i -g npm@latest'],
         commands: ['npm ci', 'npm run build', 'npx cdk synth']
       }),
     })
