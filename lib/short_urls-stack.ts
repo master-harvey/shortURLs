@@ -13,7 +13,7 @@ export class ShortUrlsStack extends Stack {
     super(scope, id, props);
     //  Check URL context
     if(this.node.tryGetContext('URL') == "") {
-      throw("You did not supply the URL context variable, add it to cdk.json")
+      throw("You did not supply the URL context variable, add it to cdk.json or supply it using the -c URL=your.URL CLI syntax")
     } else if(this.node.tryGetContext('URL').length < 4 || !this.node.tryGetContext('URL').includes('.')) {
       throw("The URL context variable must be of the form yourURL.tld")
     }
@@ -27,7 +27,7 @@ export class ShortUrlsStack extends Stack {
       synth: new pipelines.ShellStep('Synth', {
         input: pipelines.CodePipelineSource.gitHub('master-harvey/shortURLs', 'Infrastructure'),
         installCommands: ['npm i -g npm@latest'],
-        commands: ['npm ci', 'npm run build', 'npx cdk synth']
+        commands: ['npm ci', 'npm run build', `npx cdk synth -c URL=${this.node.tryGetContext("URL")}`]
       }),
     })
 
