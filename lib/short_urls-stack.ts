@@ -35,8 +35,7 @@ export class ShortUrlsStack extends Stack {
     const sourceBucket = new s3.Bucket(this, 'Bucket', {
       bucketName: `shorturls--ui-deployment`,
       removalPolicy: RemovalPolicy.DESTROY,
-      autoDeleteObjects: true,
-      enforceSSL: true
+      autoDeleteObjects: true
     });
 
     //Lambda IAM policy & role
@@ -61,10 +60,10 @@ export class ShortUrlsStack extends Stack {
       handler: 'main.handler', environment: { "bucketARN": sourceBucket.bucketArn }
     });
     const funcURL = lamb.addFunctionUrl({
-      // cors: { //testing without cors
-      //   allowedOrigins: [this.node.tryGetContext('corsURL')],
-      //   allowedMethods: [lambda.HttpMethod.PUT, lambda.HttpMethod.DELETE]
-      // }
+      cors: { //test without cors
+        allowedOrigins: [this.node.tryGetContext('URL')],
+        allowedMethods: [lambda.HttpMethod.PUT, lambda.HttpMethod.DELETE]
+      }
     })
 
     //Cloudfront + Cert
