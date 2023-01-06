@@ -6,6 +6,7 @@ import {
   aws_codepipeline as codepipeline, aws_secretsmanager as sm,
   aws_route53 as r53,
 } from 'aws-cdk-lib';
+import { CfnIndex } from 'aws-cdk-lib/aws-kendra';
 import { Construct } from 'constructs';
 
 export class ShortUrlsStack extends Stack {
@@ -35,7 +36,8 @@ export class ShortUrlsStack extends Stack {
     const sourceBucket = new s3.Bucket(this, 'Bucket', {
       bucketName: `shorturls--ui-deployment`,
       removalPolicy: RemovalPolicy.DESTROY,
-      autoDeleteObjects: true
+      autoDeleteObjects: true,
+      websiteIndexDocument: "index.html"
     });
 
     //Lambda IAM policy & role
