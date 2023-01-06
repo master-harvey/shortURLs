@@ -61,7 +61,7 @@ export class ShortUrlsStack extends Stack {
     });
     const funcURL = lamb.addFunctionUrl({
       cors: { //test without cors
-        allowedOrigins: [this.node.tryGetContext('URL')],
+        allowedOrigins: [`https://${this.node.tryGetContext('URL')}`],
         allowedMethods: [lambda.HttpMethod.PUT, lambda.HttpMethod.DELETE]
       }
     })
