@@ -5,9 +5,10 @@ from os import environ
 
 
 def create(code, URL):
-    """Upload a file to an S3 bucket
+    """Upload a redirect object to the S3 bucket
 
-    :param file_name: File to upload
+    :param code: object to upload
+    :param URL: URL to redirect to
     :return: upload details if file was uploaded, else False
     """
 
@@ -21,9 +22,9 @@ def create(code, URL):
 
 
 def delete(code):
-    """Delete a file from the S3 bucket
+    """Delete a redirect object from the S3 bucket
 
-    :param file_name: File to delete
+    :param code: object to delete
     :return: deletee details if file was deleted, else False
     """
 
@@ -38,26 +39,29 @@ def delete(code):
 
 def handler(event, context):
     """takes an event.body like {"redirectTo": URL, "key":key} or {"redirectFrom": code, "key":key} based on request method (put or delete)"""
+    print("EVENT:", event, ":EVENT")
     if (event.body.key == environ["KEY"]):
         if (event.requestContext.http.method == "PUT"):
             if (event.body.redirectTo == "" or type(event.body.redirectTo) != type("")):
-                return {"statusCode": 502, "headers": {"Content-Type": "application/json", "upload_authorized": True}, "body": "supply a URL"}
+                return {"statusCode": 502, "body": "supply a URL", "headers": {"Content-Type": "application/json", "upload_authorized": True}}
 
             # generate 5 character redirect code
             code = "12345"
+            create(code, event.body.redirectTo)
             return {
-                "statusCode": 201,
-                "headers": {"Content-Type": "application/json", "upload_authorized": True},
-                "body": create(code, event.body.redirectTo)
+                "statusCode": 201, "body": code,
+                "headers": {"Content-Type": "application/json", "upload_authorized": True}
             }
         if (event.requestContext.http.method == "DELETE"):
             if (event.body.redirectFrom == "" or type(event.body.redirectFrom) != type("")):
-                return {"statusCode": 502, "headers": {"Content-Type": "application/json", "upload_authorized": True}, "body": "supply a code"}
+                return {"statusCode": 502, "body": "supply a code", "headers": {"Content-Type": "application/json", "upload_authorized": True}}
 
+            delete(event.body.redirectFrom)
             return {
-                "statusCode": 201,
-                "headers": {"Content-Type": "application/json", "delete_authorized": True},
-                "body": delete(event.body.redirectFrom)
+                "statusCode": 201, "body": event.body.redirectFrom,
+                "headers": {"Content-Type": "application/json", "delete_authorized": True}
             }
 
-    return {"statusCode": 403, "headers": {"Content-Type": "application/json"}, "body": "Unauthorized"}
+        return {"statusCode": 405, "headers": {"Content-Type": "application/json"}, "body": "Method Not Allowed"} #method guard clause not passed
+
+    return {"statusCode": 403, "headers": {"Content-Type": "application/json"}, "body": "Forbidden"} #KEY guard clause not passed
