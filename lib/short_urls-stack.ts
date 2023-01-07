@@ -24,13 +24,13 @@ export class ShortUrlsStack extends Stack {
 
     //  Check URL param
     if (URL.valueAsString == "") {
-      throw ("You did not supply the URL parameter, add it using the --parameter URL=your.URL CLI syntax")
+      throw ("You did not supply the URL parameter, add it using the --parameters URL=your.URL CLI syntax")
     } else if (URL.valueAsString.length < 4 || !URL.valueAsString.includes('.')) {
       throw ("The URL parameter must be of the form yourURL.tld")
     }
     //  Check passkey param
     if (KEY.valueAsString == "") {
-      throw ("You did not supply the KEY parameter, add it using the --parameter KEY=yourpasskey CLI syntax")
+      throw ("You did not supply the KEY parameter, add it using the --parameters KEY=yourpasskey CLI syntax")
     }
 
     //  CDK pipeline for this deployment
@@ -183,7 +183,7 @@ export class ShortUrlsStack extends Stack {
     /*  -- Finish Pipeline --  */
 
     new CfnOutput(this, "DistributionDomain", { value: `Set your DNS alias record to: ${distribution.distributionDomainName}` })
-    new CfnOutput(this, "Validation", { value: `Get your CNAME validation record from: https://us-east-1.console.aws.amazon.com/route53/v2/hostedzones#ListRecordSets/${zone.hostedZoneId}` })
+    new CfnOutput(this, "Validation", { value: `Get your CNAME validation record from the deployment output or from: https://us-east-1.console.aws.amazon.com/route53/v2/hostedzones#ListRecordSets/${zone.hostedZoneId}` })
     new CfnOutput(this, "URLparam", { value: `Your management URL is: ${URL.valueAsString}` })
     new CfnOutput(this, "KEYparam", { value: `Your management KEY is: ${KEY.valueAsString}` })
   }
