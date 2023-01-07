@@ -62,7 +62,7 @@ export class ShortUrlsStack extends Stack {
     const lamb = new lambda.Function(this, 'Function', {
       functionName: "shortURLs-manager",
       code: lambda.Code.fromAsset('./lambda'),
-      runtime: lambda.Runtime.PYTHON_3_8, role,
+      runtime: lambda.Runtime.PYTHON_3_9, role,
       handler: 'main.handler', environment: { "BUCKET": sourceBucket.bucketName, "KEY": this.node.tryGetContext("KEY") },
     });
     const funcURL = lamb.addFunctionUrl({
