@@ -10,4 +10,8 @@ To create your own URL shortening service in S3 simply clone the repo and use th
 
 Then configure your DNS records using the output from the deployment.
 
+Changing your managment URL or KEY is as easy as running the command again with the parameter(s) you wish to change:
+
+`cdk deploy --parameters URL=new.URL --parameters KEY=yournewpasskey`
+
 Thinking of adding authorized apigw to replace lambda+URL, frontend ui, etc
