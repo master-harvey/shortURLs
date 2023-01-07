@@ -55,26 +55,24 @@ export class ShortUrlsStack extends Stack {
       publicReadAccess: true
     });
 
-    //Lambda IAM policy & role
-    const role = new iam.Role(this, "manageRedirects", {
-      roleName: "shortURLs-manager-role", assumedBy: new iam.ServicePrincipal("lambda.amazonaws.com"),
-      inlinePolicies: {
-        "redirect-manager": new iam.PolicyDocument({
-          statements: [new iam.PolicyStatement({
-            actions: ['s3:PutObject', 's3:DeleteObject'],
-            resources: [sourceBucket.bucketArn, `${sourceBucket.bucketArn}/*`],
-          })],
-        })
-      }
-    })
-    role.addManagedPolicy(iam.ManagedPolicy.fromAwsManagedPolicyName("service-role/AWSLambdaBasicExecutionRole"))
-
     //Lambda w/ function URL
     const lamb = new lambda.Function(this, 'Function', {
       functionName: "shortURLs-manager",
-      code: lambda.Code.fromAsset('./lambda'),
-      runtime: lambda.Runtime.PYTHON_3_9, role,
       handler: 'main.handler', environment: { "BUCKET": sourceBucket.bucketName, "KEY": KEY.valueAsString },
+      code: lambda.Code.fromAsset('./lambda'),
+      runtime: lambda.Runtime.PYTHON_3_9,
+      role: new iam.Role(this, "manageRedirects", {
+        roleName: "shortURLs-manager-role", assumedBy: new iam.ServicePrincipal("lambda.amazonaws.com"),
+        managedPolicies: [iam.ManagedPolicy.fromAwsManagedPolicyName("service-role/AWSLambdaBasicExecutionRole")],
+        inlinePolicies: {
+          "redirect-manager": new iam.PolicyDocument({
+            statements: [new iam.PolicyStatement({
+              actions: ['s3:PutObject', 's3:DeleteObject'],
+              resources: [sourceBucket.bucketArn, `${sourceBucket.bucketArn}/*`],
+            })],
+          })
+        }
+      })
     });
     const funcURL = lamb.addFunctionUrl({
       authType: lambda.FunctionUrlAuthType.NONE, //Internal key validation
