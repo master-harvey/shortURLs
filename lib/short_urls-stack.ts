@@ -77,6 +77,7 @@ export class ShortUrlsStack extends Stack {
       handler: 'main.handler', environment: { "BUCKET": sourceBucket.bucketName, "KEY": KEY.valueAsString },
     });
     const funcURL = lamb.addFunctionUrl({
+      authType: lambda.FunctionUrlAuthType.NONE, //Internal key validation
       // cors: { //test without cors
       //   allowedOrigins: [`https://${URL.valueAsString}`],
       //   allowedMethods: [lambda.HttpMethod.PUT, lambda.HttpMethod.DELETE]
