@@ -5,6 +5,7 @@ import {
   aws_s3 as s3, aws_lambda as lambda, aws_cloudfront as cf,
   aws_codepipeline as codepipeline, aws_secretsmanager as sm,
   aws_route53 as r53,
+  CfnOutput,
 } from 'aws-cdk-lib';
 import { Construct } from 'constructs';
 
@@ -171,5 +172,9 @@ export class ShortUrlsStack extends Stack {
     // }))
     /*  -- Finish Pipeline --  */
 
+    new CfnOutput(this, "Distribution/Alias URL", { value: distribution.distributionDomainName })
+    new CfnOutput(this, "ValidationRecord", { value: "Check the route53 console UI for your DNS validation records" })
+    new CfnOutput(this, "URLcontext", this.node.tryGetContext('URL'))
+    new CfnOutput(this, "KEYcontext", this.node.tryGetContext('KEY'))
   }
 }
