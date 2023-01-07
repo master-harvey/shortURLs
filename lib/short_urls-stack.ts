@@ -79,10 +79,10 @@ export class ShortUrlsStack extends Stack {
     });
     const funcURL = lamb.addFunctionUrl({
       authType: lambda.FunctionUrlAuthType.NONE, //Internal key validation
-      // cors: { //test without cors
-      //   allowedOrigins: [`https://${URL.valueAsString}`],
-      //   allowedMethods: [lambda.HttpMethod.PUT, lambda.HttpMethod.DELETE]
-      // }
+      cors: { //test without cors
+        allowedOrigins: [`https://${URL.valueAsString}`],
+        allowedMethods: [lambda.HttpMethod.PUT, lambda.HttpMethod.DELETE]
+      }
     })
 
     //Cloudfront + Cert
@@ -103,7 +103,7 @@ export class ShortUrlsStack extends Stack {
       },
       originConfigs: [
         {
-          s3OriginSource: { s3BucketSource: sourceBucket },
+          customOriginSource: { domainName: sourceBucket.bucketWebsiteDomainName },
           behaviors: [{ isDefaultBehavior: true }],
         },
       ],
