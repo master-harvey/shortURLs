@@ -13,11 +13,11 @@ export class ShortUrlsStack extends Stack {
   constructor(scope: Construct, id: string, props?: StackProps) {
     super(scope, id, props);
 
-    const URL = new CfnParameter(this, "management URL", {
+    const URL = new CfnParameter(this, "URL", {
       type: "String",
       description: "The URL used to manage redirects"
     });
-    const KEY = new CfnParameter(this, "management KEY", {
+    const KEY = new CfnParameter(this, "KEY", {
       type: "String",
       description: "The KEY used to manage redirects"
     });
