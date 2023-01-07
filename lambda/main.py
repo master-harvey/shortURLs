@@ -4,7 +4,7 @@ from random import SystemRandom
 from boto3 import client
 from botocore.exceptions import ClientError
 from os import environ
-
+from json import loads
 
 def create(code, URL):
     """Upload a redirect object to the S3 bucket
@@ -17,7 +17,7 @@ def create(code, URL):
     # Upload the file
     s3_client = client('s3')
     try:
-        return s3_client.put_object(Key=code, Bucket=environ['BUCKET'], object_name=code, WebsiteRedirectLocation=URL)
+        return s3_client.put_object(Key=code, Bucket=environ['BUCKET'], object_name=code, WebsiteRedirectLocation=URL, ACL='public-read')
     except ClientError as e:
         print(e)
         return False
@@ -41,30 +41,32 @@ def delete(code):
 
 def handler(event, context):
     """takes an event.body like {"redirectTo": URL, "key":key} or {"redirectFrom": code, "key":key} based on request method (put or delete)"""
-    print("EVENT:", event, ":EVENT")
-    if (event.body.key == environ["KEY"]):
-        if (event.requestContext.http.method == "PUT"):
-            if (event.body.redirectTo == "" or type(event.body.redirectTo) != type("")):
+    event['body'] = loads(event['body'])
+    if (event['body']['key'] == environ["KEY"]):
+        if (event['requestContext']['http']['method'] == "PUT"):
+            if (event['body']['redirectTo'] == "" or type(event['body']['redirectTo']) != type("")):
                 return {"statusCode": 502, "body": "supply a URL", "headers": {"Content-Type": "application/json", "upload_authorized": True}}
 
-            # generate 6 character redirect code and create the object
-            code = ''.join(SystemRandom().choice(ascii_letters + digits) for _ in range(6)) #https://stackoverflow.com/questions/2257441
-            create(code, event.body.redirectTo)
+            # generate 6 character redirect code and create the object https://stackoverflow.com/questions/2257441
+            code = ''.join(SystemRandom().choice(ascii_letters + digits) for _ in range(6))
+            create(code, event['body']['redirectTo'])
             return {
                 "statusCode": 201, "body": code,
                 "headers": {"Content-Type": "application/json", "upload_authorized": True}
             }
-        if (event.requestContext.http.method == "DELETE"):
-            if (event.body.redirectFrom == "" or type(event.body.redirectFrom) != type("")):
+        if (event['requestContext']['http.method'] == "DELETE"):
+            if (event['body']['redirectFrom'] == "" or type(event['body']['redirectFrom']) != type("")):
                 return {"statusCode": 502, "body": "supply a code", "headers": {"Content-Type": "application/json", "upload_authorized": True}}
 
             # delete object
-            delete(event.body.redirectFrom)
+            delete(event['body']['redirectFrom'])
             return {
-                "statusCode": 201, "body": event.body.redirectFrom,
+                "statusCode": 201, "body": event['body']['redirectFrom'],
                 "headers": {"Content-Type": "application/json", "delete_authorized": True}
             }
 
-        return {"statusCode": 405, "headers": {"Content-Type": "application/json"}, "body": "Method Not Allowed"} #method guard clause not passed
+        # method guard clause not passed
+        return {"statusCode": 405, "headers": {"Content-Type": "application/json"}, "body": "Method Not Allowed"}
 
-    return {"statusCode": 403, "headers": {"Content-Type": "application/json"}, "body": "Forbidden"} #KEY guard clause not passed
+    # KEY guard clause not passed
+    return {"statusCode": 403, "headers": {"Content-Type": "application/json"}, "body": "Forbidden"}
