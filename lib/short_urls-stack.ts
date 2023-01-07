@@ -6,17 +6,20 @@ import {
   aws_codepipeline as codepipeline, aws_secretsmanager as sm,
   aws_route53 as r53,
 } from 'aws-cdk-lib';
-import { CfnIndex } from 'aws-cdk-lib/aws-kendra';
 import { Construct } from 'constructs';
 
 export class ShortUrlsStack extends Stack {
   constructor(scope: Construct, id: string, props?: StackProps) {
     super(scope, id, props);
     //  Check URL context
-    if(this.node.tryGetContext('URL') == "") {
-      throw("You did not supply the URL context variable, add it to cdk.json or supply it using the -c URL=your.URL CLI syntax")
-    } else if(this.node.tryGetContext('URL').length < 4 || !this.node.tryGetContext('URL').includes('.')) {
-      throw("The URL context variable must be of the form yourURL.tld")
+    if (this.node.tryGetContext('URL') == "") {
+      throw ("You did not supply the URL context variable, add it using the -c URL=your.URL CLI syntax")
+    } else if (this.node.tryGetContext('URL').length < 4 || !this.node.tryGetContext('URL').includes('.')) {
+      throw ("The URL context variable must be of the form yourURL.tld")
+    }
+    //  Check passkey context
+    if (this.node.tryGetContext('KEY') == "") {
+      throw ("You did not supply the KEY context variable, add it using the -c KEY=yourpasskey CLI syntax")
     }
 
     //  CDK pipeline for this deployment
@@ -28,7 +31,7 @@ export class ShortUrlsStack extends Stack {
       synth: new pipelines.ShellStep('Synth', {
         input: pipelines.CodePipelineSource.gitHub('master-harvey/shortURLs', 'Infrastructure'),
         installCommands: ['npm i -g npm@latest'],
-        commands: ['npm ci', 'npm run build', `npx cdk synth -c URL=${this.node.tryGetContext("URL")}`]
+        commands: ['npm ci', 'npm run build', `npx cdk synth -c URL=${this.node.tryGetContext("URL")} -c KEY=${this.node.tryGetContext("KEY")}`]
       }),
     })
 
@@ -60,7 +63,7 @@ export class ShortUrlsStack extends Stack {
       functionName: "shortURLs-manager",
       code: lambda.Code.fromAsset('./lambda'),
       runtime: lambda.Runtime.PYTHON_3_8, role,
-      handler: 'main.handler', environment: { "BUCKET": sourceBucket.bucketName },
+      handler: 'main.handler', environment: { "BUCKET": sourceBucket.bucketName, "KEY": this.node.tryGetContext("KEY") },
     });
     const funcURL = lamb.addFunctionUrl({
       // cors: { //test without cors
@@ -92,7 +95,7 @@ export class ShortUrlsStack extends Stack {
         },
       ],
     })
-    
+
 
     /*  -- Begin UI Deployment Pipeline --  */
     const artifacts = new s3.Bucket(this, "ArtifactBucket", {
