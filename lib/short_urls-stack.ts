@@ -63,7 +63,7 @@ export class ShortUrlsStack extends Stack {
         "redirect-manager": new iam.PolicyDocument({
           statements: [new iam.PolicyStatement({
             actions: ['s3:PutObject', 's3:DeleteObject'],
-            resources: [sourceBucket.bucketArn],
+            resources: [sourceBucket.bucketArn, `${sourceBucket.bucketArn}/*`],
           })],
         })
       }

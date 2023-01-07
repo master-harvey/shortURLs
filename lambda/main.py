@@ -17,7 +17,7 @@ def create(code, URL):
     # Upload the file
     s3_client = client('s3')
     try:
-        return s3_client.put_object(Key=code, Bucket=environ['BUCKET'], WebsiteRedirectLocation=URL, ACL='public-read')
+        return s3_client.put_object(Key=code, Bucket=environ['BUCKET'], WebsiteRedirectLocation=URL)
     except ClientError as e:
         print(e)
         return False
