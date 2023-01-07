@@ -37,7 +37,8 @@ export class ShortUrlsStack extends Stack {
       bucketName: `shorturls--ui-deployment`,
       removalPolicy: RemovalPolicy.DESTROY,
       autoDeleteObjects: true,
-      websiteIndexDocument: "index.html"
+      websiteIndexDocument: "index.html",
+      publicReadAccess: true
     });
 
     //Lambda IAM policy & role
