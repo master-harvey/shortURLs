@@ -1,5 +1,7 @@
 # Add or delete redirects in the bucket
-import boto3
+from string import ascii_letters, digits
+from random import SystemRandom
+from boto3 import client
 from botocore.exceptions import ClientError
 from os import environ
 
@@ -13,7 +15,7 @@ def create(code, URL):
     """
 
     # Upload the file
-    s3_client = boto3.client('s3')
+    s3_client = client('s3')
     try:
         return s3_client.put_object(Key=code, Bucket=environ['BUCKET'], object_name=code, WebsiteRedirectLocation=URL)
     except ClientError as e:
@@ -29,7 +31,7 @@ def delete(code):
     """
 
     # Delete the file
-    s3_client = boto3.client('s3')
+    s3_client = client('s3')
     try:
         return s3_client.delete_object(Key=code, Bucket=environ['BUCKET'])
     except ClientError as e:
@@ -45,8 +47,8 @@ def handler(event, context):
             if (event.body.redirectTo == "" or type(event.body.redirectTo) != type("")):
                 return {"statusCode": 502, "body": "supply a URL", "headers": {"Content-Type": "application/json", "upload_authorized": True}}
 
-            # generate 5 character redirect code
-            code = "12345"
+            # generate 6 character redirect code and create the object
+            code = ''.join(SystemRandom().choice(ascii_letters + digits) for _ in range(6))
             create(code, event.body.redirectTo)
             return {
                 "statusCode": 201, "body": code,
@@ -56,6 +58,7 @@ def handler(event, context):
             if (event.body.redirectFrom == "" or type(event.body.redirectFrom) != type("")):
                 return {"statusCode": 502, "body": "supply a code", "headers": {"Content-Type": "application/json", "upload_authorized": True}}
 
+            # delete object
             delete(event.body.redirectFrom)
             return {
                 "statusCode": 201, "body": event.body.redirectFrom,
