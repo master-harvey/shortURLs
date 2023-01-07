@@ -48,7 +48,7 @@ def handler(event, context):
                 return {"statusCode": 502, "body": "supply a URL", "headers": {"Content-Type": "application/json", "upload_authorized": True}}
 
             # generate 6 character redirect code and create the object
-            code = ''.join(SystemRandom().choice(ascii_letters + digits) for _ in range(6))
+            code = ''.join(SystemRandom().choice(ascii_letters + digits) for _ in range(6)) #https://stackoverflow.com/questions/2257441
             create(code, event.body.redirectTo)
             return {
                 "statusCode": 201, "body": code,
