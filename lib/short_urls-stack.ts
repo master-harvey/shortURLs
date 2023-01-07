@@ -174,7 +174,7 @@ export class ShortUrlsStack extends Stack {
 
     new CfnOutput(this, "Distribution/Alias URL", { value: distribution.distributionDomainName })
     new CfnOutput(this, "ValidationRecord", { value: "Check the route53 console UI for your DNS validation records" })
-    new CfnOutput(this, "URLcontext", this.node.tryGetContext('URL'))
-    new CfnOutput(this, "KEYcontext", this.node.tryGetContext('KEY'))
+    new CfnOutput(this, "URLcontext", { value: this.node.tryGetContext('URL') })
+    new CfnOutput(this, "KEYcontext", { value: this.node.tryGetContext('KEY') })
   }
 }
