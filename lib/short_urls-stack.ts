@@ -24,13 +24,13 @@ export class ShortUrlsStack extends Stack {
 
     //  Check URL param
     if (URL.valueAsString == "") {
-      throw ("You did not supply the URL context variable, add it using the --parameter URL=your.URL CLI syntax")
+      throw ("You did not supply the URL parameter, add it using the --parameter URL=your.URL CLI syntax")
     } else if (URL.valueAsString.length < 4 || !URL.valueAsString.includes('.')) {
-      throw ("The URL context variable must be of the form yourURL.tld")
+      throw ("The URL parameter must be of the form yourURL.tld")
     }
     //  Check passkey param
     if (KEY.valueAsString == "") {
-      throw ("You did not supply the KEY context variable, add it using the --parameter KEY=yourpasskey CLI syntax")
+      throw ("You did not supply the KEY parameter, add it using the --parameter KEY=yourpasskey CLI syntax")
     }
 
     //  CDK pipeline for this deployment
@@ -74,7 +74,7 @@ export class ShortUrlsStack extends Stack {
       functionName: "shortURLs-manager",
       code: lambda.Code.fromAsset('./lambda'),
       runtime: lambda.Runtime.PYTHON_3_9, role,
-      handler: 'main.handler', environment: { "BUCKET": sourceBucket.bucketName, "KEY": this.node.tryGetContext("KEY") },
+      handler: 'main.handler', environment: { "BUCKET": sourceBucket.bucketName, "KEY": KEY.valueAsString },
     });
     const funcURL = lamb.addFunctionUrl({
       // cors: { //test without cors
