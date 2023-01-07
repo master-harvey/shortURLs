@@ -56,7 +56,7 @@ def handler(event, context):
             }
         if (event['requestContext']['http']['method'] == "DELETE"):
             if (event['body']['redirectFrom'] == "" or type(event['body']['redirectFrom']) != type("")):
-                return {"statusCode": 502, "body": "supply a code", "headers": {"Content-Type": "application/json", "upload_authorized": True}}
+                return {"statusCode": 502, "body": "supply a code", "headers": {"Content-Type": "application/json", "delete_authorized": True}}
 
             # delete object
             delete(event['body']['redirectFrom'])
