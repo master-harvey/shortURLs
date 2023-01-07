@@ -56,9 +56,8 @@ export class ShortUrlsStack extends Stack {
     });
 
     //Lambda IAM policy & role
-    const lambdaServicePrincipal = new iam.ServicePrincipal("lambda.amazonaws.com")
     const role = new iam.Role(this, "manageRedirects", {
-      roleName: "shortURLs-manager-role", assumedBy: lambdaServicePrincipal,
+      roleName: "shortURLs-manager-role", assumedBy: new iam.ServicePrincipal("lambda.amazonaws.com"),
       inlinePolicies: {
         "redirect-manager": new iam.PolicyDocument({
           statements: [new iam.PolicyStatement({
@@ -180,7 +179,18 @@ export class ShortUrlsStack extends Stack {
     invalidateStage.addAction(new cpa.CodeBuildAction({
       actionName: 'InvalidateCache',
       project: invalidateBuildProject,
-      input: builtCode
+      input: builtCode,
+      role: new iam.Role(this, "invalidationRole", {
+        roleName: "shortURLs-UI-invalidation-role", assumedBy: new iam.ServicePrincipal("codebuild.amazonaws.com"),
+        inlinePolicies: {
+          "redirect-manager": new iam.PolicyDocument({
+            statements: [new iam.PolicyStatement({
+              actions: ['cloudfront:CreateInvalidation'],
+              resources: [`arn:aws:cloudfront::${this.account}:distribution/${distribution.distributionId}`],
+            })]
+          })
+        }
+      })
     }))
     /*  -- Finish Pipeline --  */
 
