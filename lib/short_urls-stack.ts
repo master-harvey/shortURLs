@@ -170,7 +170,7 @@ export class ShortUrlsStack extends Stack {
           },
         },
       }),
-      role: new iam.Role(this, "invalidationRole", {
+      role: new iam.Role(this, "invalidationPipelineRole", {
         roleName: "shortURLs-UI-pipeline-invalidation-role", assumedBy: new iam.ServicePrincipal("codepipeline.amazonaws.com"),
         inlinePolicies: {
           "redirect-manager": new iam.PolicyDocument({
@@ -189,7 +189,7 @@ export class ShortUrlsStack extends Stack {
       actionName: 'InvalidateCache',
       project: invalidateBuildProject,
       input: builtCode,
-      role: new iam.Role(this, "invalidationRole", {
+      role: new iam.Role(this, "invalidationBuildRole", {
         roleName: "shortURLs-UI-build-invalidation-role", assumedBy: new iam.ServicePrincipal("codebuild.amazonaws.com"),
         inlinePolicies: {
           "redirect-manager": new iam.PolicyDocument({
