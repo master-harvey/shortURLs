@@ -12,6 +12,8 @@ Then configure your DNS records using the output from the deployment.
 
 Changing your managment URL or KEY is as easy as running the command again with the parameter(s) you wish to change:
 
-`cdk deploy --parameters URL=new.URL --parameters KEY=yournewpasskey`
+`cdk deploy --parameters URL=new.URL --parameters KEY=newpasskey`
 
-Thinking of adding authorized apigw to replace lambda+URL, frontend ui, etc
+You can use the UI or PUT and DELETE requests to the created function URL to create or delete redirects. The function URL takes a payload body like: {"redirectTo":URL,"key":""} or {"redirectFrom":code,"key":""} for PUT and DELETE requests respectively.
+
+Thinking of adding authorized apigw to replace lambda.
