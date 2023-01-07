@@ -60,13 +60,13 @@ export class ShortUrlsStack extends Stack {
       functionName: "shortURLs-manager",
       code: lambda.Code.fromAsset('./lambda'),
       runtime: lambda.Runtime.PYTHON_3_8, role,
-      handler: 'main.handler', environment: { "bucketARN": sourceBucket.bucketArn }
+      handler: 'main.handler', environment: { "BUCKET": sourceBucket.bucketName },
     });
     const funcURL = lamb.addFunctionUrl({
-      cors: { //test without cors
-        allowedOrigins: [`https://${this.node.tryGetContext('URL')}`],
-        allowedMethods: [lambda.HttpMethod.PUT, lambda.HttpMethod.DELETE]
-      }
+      // cors: { //test without cors
+      //   allowedOrigins: [`https://${this.node.tryGetContext('URL')}`],
+      //   allowedMethods: [lambda.HttpMethod.PUT, lambda.HttpMethod.DELETE]
+      // }
     })
 
     //Cloudfront + Cert
