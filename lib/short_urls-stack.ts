@@ -68,7 +68,7 @@ export class ShortUrlsStack extends Stack {
         })
       }
     })
-    role.addManagedPolicy(iam.ManagedPolicy.fromAwsManagedPolicyName("AWSLambdaBasicExecutionRole"))
+    role.addManagedPolicy(iam.ManagedPolicy.fromAwsManagedPolicyName("service-role/AWSLambdaBasicExecutionRole"))
 
     //Lambda w/ function URL
     const lamb = new lambda.Function(this, 'Function', {
