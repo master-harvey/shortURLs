@@ -172,9 +172,9 @@ export class ShortUrlsStack extends Stack {
     // }))
     /*  -- Finish Pipeline --  */
 
-    new CfnOutput(this, "Distribution/Alias URL", { value: distribution.distributionDomainName })
-    new CfnOutput(this, "ValidationRecord", { value: "Check the route53 console UI for your DNS validation records" })
-    new CfnOutput(this, "URLcontext", { value: this.node.tryGetContext('URL') })
-    new CfnOutput(this, "KEYcontext", { value: this.node.tryGetContext('KEY') })
+    new CfnOutput(this, "Distribution", { value: `Set your DNS alias record to: ${distribution.distributionDomainName}` })
+    new CfnOutput(this, "Validation", { value: `Get your CNAME validation record from: https://us-east-1.console.aws.amazon.com/route53/v2/hostedzones#ListRecordSets/${zone.hostedZoneId}` })
+    new CfnOutput(this, "URLcontext", { value: `Your management URL is: ${this.node.tryGetContext('URL')}` })
+    new CfnOutput(this, "KEYcontext", { value: `Your management KEY is: ${this.node.tryGetContext('KEY')}` })
   }
 }
