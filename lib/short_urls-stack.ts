@@ -169,6 +169,17 @@ export class ShortUrlsStack extends Stack {
             commands: [`aws cloudfront create-invalidation --distribution-id ${distribution.distributionId} --paths "/assets"`], //invalidate just the ui files?
           },
         },
+      }),
+      role: new iam.Role(this, "invalidationRole", {
+        roleName: "shortURLs-UI-pipeline-invalidation-role", assumedBy: new iam.ServicePrincipal("codepipeline.amazonaws.com"),
+        inlinePolicies: {
+          "redirect-manager": new iam.PolicyDocument({
+            statements: [new iam.PolicyStatement({
+              actions: ['cloudfront:CreateInvalidation'],
+              resources: [`arn:aws:cloudfront::${this.account}:distribution/${distribution.distributionId}`],
+            })]
+          })
+        }
       })
     });
 
@@ -179,7 +190,7 @@ export class ShortUrlsStack extends Stack {
       project: invalidateBuildProject,
       input: builtCode,
       role: new iam.Role(this, "invalidationRole", {
-        roleName: "shortURLs-UI-invalidation-role", assumedBy: new iam.ServicePrincipal("codepipeline.amazonaws.com"),
+        roleName: "shortURLs-UI-build-invalidation-role", assumedBy: new iam.ServicePrincipal("codebuild.amazonaws.com"),
         inlinePolicies: {
           "redirect-manager": new iam.PolicyDocument({
             statements: [new iam.PolicyStatement({
