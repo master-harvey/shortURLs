@@ -162,26 +162,26 @@ export class ShortUrlsStack extends Stack {
     }))
 
     // Create the build project that will invalidate the cache | https://docs.aws.amazon.com/cdk/api/v2/docs/aws-cdk-lib.aws_codepipeline_actions.CodeBuildActionProps.html
-    // const invalidateBuildProject = new cbd.PipelineProject(this, `InvalidateProject`, {
-    //   projectName: `shortURLs--Invalidate-Dist`,
-    //   environment: { buildImage: cbd.LinuxBuildImage.STANDARD_5_0 },
-    //   buildSpec: cbd.BuildSpec.fromObject({
-    //     version: '0.2',
-    //     phases: {
-    //       build: {
-    //         commands: [`aws cloudfront create-invalidation --distribution-id ${distribution.distributionId} --paths "/assets"`], //invalidate just the ui files?
-    //       },
-    //     },
-    //   })
-    // });
+    const invalidateBuildProject = new cbd.PipelineProject(this, `InvalidateProject`, {
+      projectName: `shortURLs--Invalidate-Dist`,
+      environment: { buildImage: cbd.LinuxBuildImage.STANDARD_5_0 },
+      buildSpec: cbd.BuildSpec.fromObject({
+        version: '0.2',
+        phases: {
+          build: {
+            commands: [`aws cloudfront create-invalidation --distribution-id ${distribution.distributionId} --paths "/assets"`], //invalidate just the ui files?
+          },
+        },
+      })
+    });
 
-    // // invalidate cloudfront cache for 'immediate' redeployment
-    // const invalidateStage = cPipeline.addStage({ stageName: "Invalidate-CF-Cache" })
-    // invalidateStage.addAction(new cpa.CodeBuildAction({
-    //   actionName: 'InvalidateCache',
-    //   project: invalidateBuildProject,
-    //   input: builtCode
-    // }))
+    // invalidate cloudfront cache for 'immediate' redeployment
+    const invalidateStage = cPipeline.addStage({ stageName: "Invalidate-CF-Cache" })
+    invalidateStage.addAction(new cpa.CodeBuildAction({
+      actionName: 'InvalidateCache',
+      project: invalidateBuildProject,
+      input: builtCode
+    }))
     /*  -- Finish Pipeline --  */
 
     new CfnOutput(this, "DistributionDomain", { value: `Set your DNS alias record to: ${distribution.distributionDomainName}` })
