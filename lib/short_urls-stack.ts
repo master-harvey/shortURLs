@@ -181,7 +181,7 @@ export class ShortUrlsStack extends Stack {
       project: invalidateBuildProject,
       input: builtCode,
       role: new iam.Role(this, "invalidationRole", {
-        roleName: "shortURLs-UI-invalidation-role", assumedBy: new iam.ServicePrincipal("codebuild.amazonaws.com"),
+        roleName: "shortURLs-UI-invalidation-role", assumedBy: new iam.ServicePrincipal("codepipeline.amazonaws.com"),
         inlinePolicies: {
           "redirect-manager": new iam.PolicyDocument({
             statements: [new iam.PolicyStatement({
