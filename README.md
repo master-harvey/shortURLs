@@ -6,9 +6,8 @@ To create your own URL shortening service in S3 simply clone the repo and use th
 
 `npm i`
 
-`cdk deploy -c URL=your.URL`
+`cdk deploy --parameter URL=your.URL --parameter KEY=yourpasskey`
 
 Then configure your DNS records using the output from the deployment.
-
 
 Thinking of adding authorized apigw to replace lambda+URL, frontend ui, etc

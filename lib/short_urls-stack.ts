@@ -5,22 +5,32 @@ import {
   aws_s3 as s3, aws_lambda as lambda, aws_cloudfront as cf,
   aws_codepipeline as codepipeline, aws_secretsmanager as sm,
   aws_route53 as r53,
-  CfnOutput,
+  CfnOutput, CfnParameter
 } from 'aws-cdk-lib';
 import { Construct } from 'constructs';
 
 export class ShortUrlsStack extends Stack {
   constructor(scope: Construct, id: string, props?: StackProps) {
     super(scope, id, props);
-    //  Check URL context
-    if (this.node.tryGetContext('URL') == "") {
-      throw ("You did not supply the URL context variable, add it using the -c URL=your.URL CLI syntax")
-    } else if (this.node.tryGetContext('URL').length < 4 || !this.node.tryGetContext('URL').includes('.')) {
+
+    const URL = new CfnParameter(this, "management URL", {
+      type: "String",
+      description: "The URL used to manage redirects"
+    });
+    const KEY = new CfnParameter(this, "management KEY", {
+      type: "String",
+      description: "The KEY used to manage redirects"
+    });
+
+    //  Check URL param
+    if (URL.valueAsString == "") {
+      throw ("You did not supply the URL context variable, add it using the --parameter URL=your.URL CLI syntax")
+    } else if (URL.valueAsString.length < 4 || !URL.valueAsString.includes('.')) {
       throw ("The URL context variable must be of the form yourURL.tld")
     }
-    //  Check passkey context
-    if (this.node.tryGetContext('KEY') == "") {
-      throw ("You did not supply the KEY context variable, add it using the -c KEY=yourpasskey CLI syntax")
+    //  Check passkey param
+    if (KEY.valueAsString == "") {
+      throw ("You did not supply the KEY context variable, add it using the --parameter KEY=yourpasskey CLI syntax")
     }
 
     //  CDK pipeline for this deployment
@@ -32,7 +42,7 @@ export class ShortUrlsStack extends Stack {
       synth: new pipelines.ShellStep('Synth', {
         input: pipelines.CodePipelineSource.gitHub('master-harvey/shortURLs', 'Infrastructure'),
         installCommands: ['npm i -g npm@latest'],
-        commands: ['npm ci', 'npm run build', `npx cdk synth -c URL=${this.node.tryGetContext("URL")} -c KEY=${this.node.tryGetContext("KEY")}`]
+        commands: ['npm ci', 'npm run build', `npx cdk synth --parameters URL=${URL.valueAsString} --parameters KEY=${KEY.valueAsString}`]
       }),
     })
 
@@ -68,21 +78,21 @@ export class ShortUrlsStack extends Stack {
     });
     const funcURL = lamb.addFunctionUrl({
       // cors: { //test without cors
-      //   allowedOrigins: [`https://${this.node.tryGetContext('URL')}`],
+      //   allowedOrigins: [`https://${URL.valueAsString}`],
       //   allowedMethods: [lambda.HttpMethod.PUT, lambda.HttpMethod.DELETE]
       // }
     })
 
     //Cloudfront + Cert
-    const zone = new r53.HostedZone(this, "HostedZone", { zoneName: this.node.tryGetContext('URL') })
+    const zone = new r53.HostedZone(this, "HostedZone", { zoneName: URL.valueAsString })
     const cert = new cm.Certificate(this, "UI-Cert", {
-      domainName: this.node.tryGetContext('URL'),
+      domainName: URL.valueAsString,
       certificateName: 'shortURLs-UI',
       validation: cm.CertificateValidation.fromDns(zone)
     })
     const distribution = new cf.CloudFrontWebDistribution(this, 'Distribution', {
       viewerCertificate: {
-        aliases: [this.node.tryGetContext('URL')],
+        aliases: [URL.valueAsString],
         props: {
           acmCertificateArn: cert.certificateArn,
           sslSupportMethod: 'sni-only',
@@ -174,7 +184,7 @@ export class ShortUrlsStack extends Stack {
 
     new CfnOutput(this, "DistributionDomain", { value: `Set your DNS alias record to: ${distribution.distributionDomainName}` })
     new CfnOutput(this, "Validation", { value: `Get your CNAME validation record from: https://us-east-1.console.aws.amazon.com/route53/v2/hostedzones#ListRecordSets/${zone.hostedZoneId}` })
-    new CfnOutput(this, "URLcontext", { value: `Your management URL is: ${this.node.tryGetContext('URL')}` })
-    new CfnOutput(this, "KEYcontext", { value: `Your management KEY is: ${this.node.tryGetContext('KEY')}` })
+    new CfnOutput(this, "URLparam", { value: `Your management URL is: ${URL.valueAsString}` })
+    new CfnOutput(this, "KEYparam", { value: `Your management KEY is: ${KEY.valueAsString}` })
   }
 }
