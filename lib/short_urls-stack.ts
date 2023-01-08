@@ -83,28 +83,28 @@ export class ShortUrlsStack extends Stack {
     })
 
     //Cloudfront + Cert
-    const zone = new r53.HostedZone(this, "HostedZone", { zoneName: URL.valueAsString })
-    const cert = new cm.Certificate(this, "UI-Cert", {
-      domainName: URL.valueAsString,
-      certificateName: 'shortURLs-UI',
-      validation: cm.CertificateValidation.fromDns(zone)
-    })
-    const distribution = new cf.CloudFrontWebDistribution(this, 'Distribution', {
-      viewerCertificate: {
-        aliases: [URL.valueAsString],
-        props: {
-          acmCertificateArn: cert.certificateArn,
-          sslSupportMethod: 'sni-only',
-          minimumProtocolVersion: 'TLSv1.1_2016'
-        }
-      },
-      originConfigs: [
-        {
-          customOriginSource: { domainName: sourceBucket.bucketWebsiteDomainName },
-          behaviors: [{ isDefaultBehavior: true }],
-        },
-      ],
-    })
+    // const zone = new r53.HostedZone(this, "HostedZone", { zoneName: URL.valueAsString })
+    // const cert = new cm.Certificate(this, "UI-Cert", {
+    //   domainName: URL.valueAsString,
+    //   certificateName: 'shortURLs-UI',
+    //   validation: cm.CertificateValidation.fromDns(zone)
+    // })
+    // const distribution = new cf.CloudFrontWebDistribution(this, 'Distribution', {
+    //   viewerCertificate: {
+    //     aliases: [URL.valueAsString],
+    //     props: {
+    //       acmCertificateArn: cert.certificateArn,
+    //       sslSupportMethod: 'sni-only',
+    //       minimumProtocolVersion: 'TLSv1.1_2016'
+    //     }
+    //   },
+    //   originConfigs: [
+    //     {
+    //       customOriginSource: { domainName: sourceBucket.bucketWebsiteDomainName },
+    //       behaviors: [{ isDefaultBehavior: true }],
+    //     },
+    //   ],
+    // })
 
 
     /*  -- Begin UI Deployment Pipeline --  */
@@ -159,52 +159,53 @@ export class ShortUrlsStack extends Stack {
     }))
 
     // Create the build project that will invalidate the cache | https://docs.aws.amazon.com/cdk/api/v2/docs/aws-cdk-lib.aws_codepipeline_actions.CodeBuildActionProps.html
-    const invalidateBuildProject = new cbd.PipelineProject(this, `InvalidateProject`, {
-      projectName: `shortURLs--Invalidate-Dist`,
-      environment: { buildImage: cbd.LinuxBuildImage.STANDARD_5_0 },
-      buildSpec: cbd.BuildSpec.fromObject({
-        version: '0.2',
-        phases: {
-          build: {
-            commands: [`aws cloudfront create-invalidation --distribution-id ${distribution.distributionId} --paths "/assets"`], //invalidate just the ui files?
-          },
-        },
-      }),
-      role: new iam.Role(this, "invalidationPipelineRole", {
-        roleName: "shortURLs-UI-pipeline-invalidation-role", assumedBy: new iam.ServicePrincipal("codepipeline.amazonaws.com"),
-        inlinePolicies: {
-          "redirect-manager": new iam.PolicyDocument({
-            statements: [new iam.PolicyStatement({
-              actions: ['cloudfront:CreateInvalidation'],
-              resources: [`arn:aws:cloudfront::${this.account}:distribution/${distribution.distributionId}`],
-            })]
-          })
-        }
-      })
-    });
+    // const invalidateBuildProject = new cbd.PipelineProject(this, `InvalidateProject`, {
+    //   projectName: `shortURLs--Invalidate-Dist`,
+    //   environment: { buildImage: cbd.LinuxBuildImage.STANDARD_5_0 },
+    //   buildSpec: cbd.BuildSpec.fromObject({
+    //     version: '0.2',
+    //     phases: {
+    //       build: {
+    //         commands: [`aws cloudfront create-invalidation --distribution-id ${distribution.distributionId} --paths "/assets"`], //invalidate just the ui files?
+    //       },
+    //     },
+    //   }),
+    //   role: new iam.Role(this, "invalidationPipelineRole", {
+    //     roleName: "shortURLs-UI-pipeline-invalidation-role", assumedBy: new iam.ServicePrincipal("codepipeline.amazonaws.com"),
+    //     inlinePolicies: {
+    //       "redirect-manager": new iam.PolicyDocument({
+    //         statements: [new iam.PolicyStatement({
+    //           actions: ['cloudfront:CreateInvalidation'],
+    //           resources: [`arn:aws:cloudfront::${this.account}:distribution/${distribution.distributionId}`],
+    //         })]
+    //       })
+    //     }
+    //   })
+    // });
 
     // invalidate cloudfront cache for 'immediate' redeployment
-    const invalidateStage = cPipeline.addStage({ stageName: "Invalidate-CF-Cache" })
-    invalidateStage.addAction(new cpa.CodeBuildAction({
-      actionName: 'InvalidateCache',
-      project: invalidateBuildProject,
-      input: builtCode,
-      role: new iam.Role(this, "invalidationBuildRole", {
-        roleName: "shortURLs-UI-build-invalidation-role", assumedBy: new iam.ServicePrincipal("codebuild.amazonaws.com"),
-        inlinePolicies: {
-          "redirect-manager": new iam.PolicyDocument({
-            statements: [new iam.PolicyStatement({
-              actions: ['cloudfront:CreateInvalidation'],
-              resources: [`arn:aws:cloudfront::${this.account}:distribution/${distribution.distributionId}`],
-            })]
-          })
-        }
-      })
-    }))
+    // const invalidateStage = cPipeline.addStage({ stageName: "Invalidate-CF-Cache" })
+    // invalidateStage.addAction(new cpa.CodeBuildAction({
+    //   actionName: 'InvalidateCache',
+    //   project: invalidateBuildProject,
+    //   input: builtCode,
+    //   role: new iam.Role(this, "invalidationBuildRole", {
+    //     roleName: "shortURLs-UI-build-invalidation-role", assumedBy: new iam.ServicePrincipal("codebuild.amazonaws.com"),
+    //     inlinePolicies: {
+    //       "redirect-manager": new iam.PolicyDocument({
+    //         statements: [new iam.PolicyStatement({
+    //           actions: ['cloudfront:CreateInvalidation'],
+    //           resources: [`arn:aws:cloudfront::${this.account}:distribution/${distribution.distributionId}`],
+    //         })]
+    //       })
+    //     }
+    //   })
+    // }))
     /*  -- Finish Pipeline --  */
 
-    new CfnOutput(this, "DistributionDomain", { value: `Set your DNS alias record to: ${distribution.distributionDomainName}` })
-    new CfnOutput(this, "Validation", { value: `Get your CNAME validation record from the deployment output or from: https://us-east-1.console.aws.amazon.com/route53/v2/hostedzones#ListRecordSets/${zone.hostedZoneId}` })
+    // new CfnOutput(this, "DistributionDomain", { value: `Set your DNS alias record to: ${distribution.distributionDomainName}` })
+    // new CfnOutput(this, "Validation", { value: `Get your CNAME validation record from the deployment output or from: https://us-east-1.console.aws.amazon.com/route53/v2/hostedzones#ListRecordSets/${zone.hostedZoneId}` })
+    new CfnOutput(this, "bucketDomain", { value: `Create an alias record for: ${sourceBucket.bucketWebsiteDomainName}` })
     new CfnOutput(this, "functionURL", { value: `Programatically manage your short URLs using this link: ${funcURL}` })
     new CfnOutput(this, "KEYparam", { value: `Your management KEY is: ${KEY.valueAsString}` })
     new CfnOutput(this, "URLparam", { value: `Your management URL is: ${URL.valueAsString}` })
