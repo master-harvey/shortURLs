@@ -40,7 +40,8 @@ export class ShortUrlsStack extends Stack {
       synth: new pipelines.ShellStep('Synth', {
         input: pipelines.CodePipelineSource.gitHub('master-harvey/shortURLs', 'Infrastructure'),
         installCommands: ['npm i -g npm@latest'],
-        commands: ['npm ci', 'npm run build', `npx cdk synth --parameters URL=${URL.valueAsString} --parameters KEY=${KEY.valueAsString}`]
+        commands: ['npm ci', 'npm run build', `npx cdk synth`]
+        //commands: ['npm ci', 'npm run build', `npx cdk synth --parameters URL=${URL.valueAsString} --parameters KEY=${KEY.valueAsString}`]
       }),
     })
 
