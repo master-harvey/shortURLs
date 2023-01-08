@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import mastersLogo from './mastersLogo.png'
+
+import gitLogo from './github-mark-white.svg'
 import './App.css'
 
 import { styled, alpha } from '@mui/material/styles';
@@ -68,8 +69,8 @@ function App() {
             aria-label="open drawer"
             sx={{ mr: 2 }}
           >
-            <a href="https://mastersautomation.tech" target="_blank">
-              <img src={mastersLogo} className="Masters logo" alt="Masters logo" />
+            <a href="https://github.com/master-harvey/shortURLs" target="_blank">
+              <img src={gitLogo} className="Github logo" alt="Github logo" />
             </a>
           </IconButton>
           <Typography
