@@ -206,7 +206,7 @@ export class ShortUrlsStack extends Stack {
     // new CfnOutput(this, "DistributionDomain", { value: `Set your DNS alias record to: ${distribution.distributionDomainName}` })
     // new CfnOutput(this, "Validation", { value: `Get your CNAME validation record from the deployment output or from: https://us-east-1.console.aws.amazon.com/route53/v2/hostedzones#ListRecordSets/${zone.hostedZoneId}` })
     new CfnOutput(this, "bucketDomain", { value: `Create an alias record for: ${sourceBucket.bucketWebsiteDomainName}` })
-    new CfnOutput(this, "functionURL", { value: `Programatically manage your short URLs using this link: ${funcURL}` })
+    new CfnOutput(this, "functionURL", { value: `Programatically manage your short URLs using this link: ${funcURL.url}` })
     new CfnOutput(this, "KEYparam", { value: `Your management KEY is: ${KEY.valueAsString}` })
     new CfnOutput(this, "URLparam", { value: `Your management URL is: ${URL.valueAsString}` })
   }
