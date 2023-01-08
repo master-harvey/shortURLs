@@ -54,7 +54,7 @@ export class ShortUrlsStack extends Stack {
     });
 
     //put index.html in the redirect bucket
-    new s3d.BucketDeployment(this, 'DeployFiles', { sources: [s3d.Source.asset('../src')], destinationBucket: redirectBucket });
+    new s3d.BucketDeployment(this, 'DeployFiles', { sources: [s3d.Source.asset('./src')], destinationBucket: redirectBucket });
 
     //Lambda w/ function URL
     const lamb = new lambda.Function(this, 'Function', {
