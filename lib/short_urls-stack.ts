@@ -83,7 +83,7 @@ export class ShortUrlsStack extends Stack {
     const funcURL = lamb.addFunctionUrl({
       authType: lambda.FunctionUrlAuthType.NONE, //Internal key validation
       // cors: { //test without cors
-      //   allowedOrigins: [`https://${PRE.valueAsString??"url"}.${URL.valueAsString}`],
+      //   allowedOrigins: [`https://${PRE.valueAsString}.${URL.valueAsString}`],
       //   allowedMethods: [lambda.HttpMethod.PUT, lambda.HttpMethod.DELETE]
       // }
     })
@@ -98,7 +98,7 @@ export class ShortUrlsStack extends Stack {
     })
 
     //Cloudfront + Cert for Management UI
-    const zone = new r53.HostedZone(this, "HostedZone", { zoneName: `${SUB.valueAsString??"url"}.${URL.valueAsString}` })
+    const zone = new r53.HostedZone(this, "HostedZone", { zoneName: `${SUB.valueAsString}.${URL.valueAsString}` })
     const cert = new cm.Certificate(this, "UI-Cert", {
       domainName: URL.valueAsString,
       certificateName: 'shortURLs-UI',
@@ -106,7 +106,7 @@ export class ShortUrlsStack extends Stack {
     })
     const distribution = new cf.CloudFrontWebDistribution(this, 'Distribution', {
       viewerCertificate: {
-        aliases: [`${SUB.valueAsString??"url"}.${URL.valueAsString}`],
+        aliases: [`${SUB.valueAsString}.${URL.valueAsString}`],
         props: {
           acmCertificateArn: cert.certificateArn,
           sslSupportMethod: 'sni-only',
@@ -212,10 +212,10 @@ export class ShortUrlsStack extends Stack {
     /*  -- Finish Pipeline --  */
 
     new CfnOutput(this, "FunctionURL", { value: `[DEV] Manage short URLs using this endpoint: ${funcURL.url}` }) // remove in production and enable CORS
-    new CfnOutput(this, "DistributionDomain", { value: `Set your DNS alias record for the url subdomain (${SUB.valueAsString??"url"}.${URL.valueAsString}) to: ${distribution.distributionDomainName}` })
+    new CfnOutput(this, "DistributionDomain", { value: `Set your DNS alias record for the url subdomain (${SUB.valueAsString}.${URL.valueAsString}) to: ${distribution.distributionDomainName}` })
     new CfnOutput(this, "Validation", { value: `Get your CNAME validation record from the deployment output or from: https://us-east-1.console.aws.amazon.com/route53/v2/hostedzones#ListRecordSets/${zone.hostedZoneId}` })
     new CfnOutput(this, "BucketDomain", { value: `Create an alias record at ${URL} to: ${redirectBucket.bucketWebsiteDomainName}` })
     new CfnOutput(this, "KEYparam", { value: `Your management KEY is: ${KEY.valueAsString}` })
-    new CfnOutput(this, "URLparam", { value: `Your management URL is: ${SUB.valueAsString??"url"}.${URL.valueAsString}` })
+    new CfnOutput(this, "URLparam", { value: `Your management URL is: ${SUB.valueAsString}.${URL.valueAsString}` })
   }
 }
