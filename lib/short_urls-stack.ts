@@ -48,7 +48,7 @@ export class ShortUrlsStack extends Stack {
 
     //S3 Deployment Bucket
     const sourceBucket = new s3.Bucket(this, 'Bucket', {
-      bucketName: `shorturls--ui-deployment`,
+      bucketName: URL.valueAsString,
       removalPolicy: RemovalPolicy.DESTROY,
       autoDeleteObjects: true,
       websiteIndexDocument: "index.html",
