@@ -44,7 +44,6 @@ export class ShortUrlsStack extends Stack {
         input: pipelines.CodePipelineSource.gitHub('master-harvey/shortURLs', 'Infrastructure'),
         installCommands: ['npm i -g npm@latest'],
         commands: ['npm ci', 'npm run build', `npx cdk synth`]
-        //commands: ['npm ci', 'npm run build', `npx cdk synth --parameters URL=${URL.valueAsString} --parameters KEY=${KEY.valueAsString}`]
       }),
     })
 
@@ -165,42 +164,6 @@ export class ShortUrlsStack extends Stack {
       bucket: UIbucket,
       input: builtCode
     }))
-
-    // invalidation is NON-critical
-    // Create the build project that will invalidate the cache | https://docs.aws.amazon.com/cdk/api/v2/docs/aws-cdk-lib.aws_codepipeline_actions.CodeBuildActionProps.html
-    // const invalidationRole = new iam.Role(this, "invalidationPipelineRole", {
-    //   roleName: "shortURLs-UI-build-invalidation-role", assumedBy: new iam.ServicePrincipal("codebuild.amazonaws.com"),
-    //   inlinePolicies: {
-    //     "redirect-manager": new iam.PolicyDocument({
-    //       statements: [new iam.PolicyStatement({
-    //         actions: ['cloudfront:CreateInvalidation'],
-    //         resources: [`arn:aws:cloudfront::${this.account}:distribution/${distribution.distributionId}`],
-    //       })]
-    //     })
-    //   }
-    // })
-    // const invalidateBuildProject = new cbd.PipelineProject(this, `InvalidateProject`, {
-    //   projectName: `shortURLs--Invalidate-Dist`,
-    //   environment: { buildImage: cbd.LinuxBuildImage.STANDARD_5_0 },
-    //   buildSpec: cbd.BuildSpec.fromObject({
-    //     version: '0.2',
-    //     phases: {
-    //       build: {
-    //         commands: [`aws cloudfront create-invalidation --distribution-id ${distribution.distributionId} --paths "/assets"`], //invalidate just the ui files?
-    //       },
-    //     },
-    //   }),
-    //   role: invalidationRole
-    // });
-
-    // // invalidate cloudfront cache for 'immediate' redeployment
-    // const invalidateStage = cPipeline.addStage({ stageName: "Invalidate-CF-Cache" })
-    // invalidateStage.addAction(new cpa.CodeBuildAction({
-    //   actionName: 'InvalidateCache',
-    //   project: invalidateBuildProject,
-    //   input: builtCode,
-    //   role: invalidationRole
-    // }))
     /*  -- Finish Pipeline --  */
 
     new CfnOutput(this, "DistributionDomain", { value: `Set your DNS alias record for the url subdomain (${SUB.valueAsString}.${URL.valueAsString}) to: ${distribution.distributionDomainName}` })
