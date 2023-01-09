@@ -100,21 +100,21 @@ export class ShortUrlsStack extends Stack {
       })
 
       //Cloudfront + Cert for Management UI
-      // const zone = new r53.HostedZone(this, "HostedZone", { zoneName: `${SUB.valueAsString}.${URL.valueAsString}` })
-      // const cert = new cm.Certificate(this, "UI-Cert", {
-      //   domainName: URL.valueAsString,
-      //   certificateName: 'shortURLs-UI',
-      //   validation: cm.CertificateValidation.fromDns(zone)
-      // })
+      const zone = new r53.HostedZone(this, "HostedZone", { zoneName: `${SUB.valueAsString}.${URL.valueAsString}` })
+      const cert = new cm.Certificate(this, "UI-Cert", {
+        domainName: URL.valueAsString,
+        certificateName: 'shortURLs-UI',
+        validation: cm.CertificateValidation.fromDns(zone)
+      })
       const distribution = new cf.CloudFrontWebDistribution(this, 'Distribution', {
-        // viewerCertificate: {
-        //   aliases: [`${SUB.valueAsString}.${URL.valueAsString}`],
-        //   props: {
-        //     acmCertificateArn: cert.certificateArn,
-        //     sslSupportMethod: 'sni-only',
-        //     minimumProtocolVersion: 'TLSv1.1_2016'
-        //   }
-        // },
+        viewerCertificate: {
+          aliases: [`${SUB.valueAsString}.${URL.valueAsString}`],
+          props: {
+            acmCertificateArn: cert.certificateArn,
+            sslSupportMethod: 'sni-only',
+            minimumProtocolVersion: 'TLSv1.1_2016'
+          }
+        },
         originConfigs: [
           {
             s3OriginSource: { s3BucketSource: UIbucket },
