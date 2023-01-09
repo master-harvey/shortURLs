@@ -166,8 +166,8 @@ export class ShortUrlsStack extends Stack {
     }))
     /*  -- Finish Pipeline --  */
 
-    new CfnOutput(this, "DistributionDomain", { value: `Set your DNS alias record for the url subdomain (${SUB.valueAsString}.${URL.valueAsString}) to: ${distribution.distributionDomainName}` })
-    new CfnOutput(this, "BucketDomain", { value: `Create an alias record at ${URL} to: ${redirectBucket.bucketWebsiteDomainName}` })
+    new CfnOutput(this, "DistributionDomain", { value: `Create an alias alias record for ${SUB.valueAsString}.${URL.valueAsString} to: ${distribution.distributionDomainName}` })
+    new CfnOutput(this, "BucketDomain", { value: `Create an alias record for ${URL.valueAsString} to: ${redirectBucket.bucketWebsiteDomainName}` })
     new CfnOutput(this, "FunctionURL", { value: `[DEV] Manage short URLs using this endpoint: ${funcURL.url}` }) // remove in production and enable CORS
     // new CfnOutput(this, "Validation", { value: `Get your CNAME validation record from the deployment output or from: https://us-east-1.console.aws.amazon.com/route53/v2/hostedzones#ListRecordSets/${zone.hostedZoneId}` })
     new CfnOutput(this, "KEYparam", { value: `Your management KEY is: ${KEY.valueAsString}` })
