@@ -13,27 +13,20 @@ export class ShortUrlsStack extends Stack {
   constructor(scope: Construct, id: string, props?: StackProps) {
     super(scope, id, props);
 
-    const URL = new CfnParameter(this, "URL", {
-      description: "The short URL", type: "String"
-    });
-    //  Check URL params
-    if (URL.valueAsString == "") {
+    const URL = this.node.tryGetContext('URL')
+    const SUB = this.node.tryGetContext('SUB')
+    const KEY = this.node.tryGetContext('KEY')
+
+    //  Check URL context
+    if (URL == "") {
       throw ("You did not supply the URL parameter, add it using the --parameters URL=your.URL CLI syntax")
-    } else if (URL.valueAsString.length < 4 || !URL.valueAsString.includes('.')) {
+    } else if (URL.length < 4 || !URL.includes('.')) {
       throw ("The URL parameter must be of the form yourURL.tld")
     }
 
     if (!this.node.tryGetContext('CORSurl')) {
-      const SUB = new CfnParameter(this, "SUB", {
-        description: "The SUBdomain used to manage short URLs", type: "String"
-      });
-      const KEY = new CfnParameter(this, "KEY", {
-        description: "The KEY used to manage redirects", type: "String"
-      });
-      //  Check passkey param
-      if (KEY.valueAsString == "") {
-        throw ("You did not supply the KEY parameter, add it using the --parameters KEY=yourpasskey CLI syntax")
-      }
+      if (!SUB) { throw ("The UI requires the SUB context variable, add it using the -c SUB=yoursubdomain CLI syntax") }
+      if (!KEY) { throw ("The UI requires the KEY context variable, add it using the -c KEY=yourpasskey CLI syntax") }
     }
 
     //  CDK pipeline for this deployment
@@ -51,7 +44,7 @@ export class ShortUrlsStack extends Stack {
 
     //Website bucket serving redirects and 'blank' index.html
     const redirectBucket = new s3.Bucket(this, 'Bucket', {
-      bucketName: URL.valueAsString,
+      bucketName: URL,
       removalPolicy: RemovalPolicy.DESTROY,
       autoDeleteObjects: true,
       websiteIndexDocument: "index.html",
@@ -64,7 +57,7 @@ export class ShortUrlsStack extends Stack {
     //Lambda w/ function URL
     const lamb = new lambda.Function(this, 'Function', {
       functionName: "shortURLs-manager",
-      handler: 'main.handler', environment: { "BUCKET": redirectBucket.bucketName, "KEY": KEY.valueAsString },
+      handler: 'main.handler', environment: { "BUCKET": redirectBucket.bucketName, "KEY": KEY },
       code: lambda.Code.fromAsset('./lambda'),
       runtime: lambda.Runtime.PYTHON_3_9,
       role: new iam.Role(this, "manageRedirects", {
@@ -84,7 +77,7 @@ export class ShortUrlsStack extends Stack {
     const funcURL = lamb.addFunctionUrl({
       authType: lambda.FunctionUrlAuthType.NONE, //Internal key validation
       cors: { //test without cors
-        allowedOrigins: [this.node.tryGetContext('CORSurl') ?? `https://${SUB.valueAsString}.${URL.valueAsString}`],
+        allowedOrigins: [this.node.tryGetContext('CORSurl') ?? `https://${SUB}.${URL}`],
         allowedMethods: [lambda.HttpMethod.PUT, lambda.HttpMethod.DELETE]
       }
     })
@@ -100,15 +93,15 @@ export class ShortUrlsStack extends Stack {
       })
 
       //Cloudfront + Cert for Management UI
-      const zone = new r53.HostedZone(this, "HostedZone", { zoneName: `${SUB.valueAsString}.${URL.valueAsString}` })
+      const zone = new r53.HostedZone(this, "HostedZone", { zoneName: `${SUB}.${URL}` })
       const cert = new cm.Certificate(this, "UI-Cert", {
-        domainName: URL.valueAsString,
+        domainName: URL,
         certificateName: 'shortURLs-UI',
         validation: cm.CertificateValidation.fromDns(zone)
       })
       const distribution = new cf.CloudFrontWebDistribution(this, 'Distribution', {
         viewerCertificate: {
-          aliases: [`${SUB.valueAsString}.${URL.valueAsString}`],
+          aliases: [`${SUB}.${URL}`],
           props: {
             acmCertificateArn: cert.certificateArn,
             sslSupportMethod: 'sni-only',
@@ -168,12 +161,12 @@ export class ShortUrlsStack extends Stack {
         input: builtCode
       }))
       /*  -- Finish Pipeline --  */
-      new CfnOutput(this, "DistributionDomain", { value: `Create an alias alias record for ${SUB.valueAsString}.${URL.valueAsString} to: ${distribution.distributionDomainName}` })
-      new CfnOutput(this, "KEYparam", { value: `Your management KEY is: ${KEY.valueAsString}` })
-      new CfnOutput(this, "URLparam", { value: `Your management URL is: ${SUB.valueAsString}.${URL.valueAsString}` })
+      new CfnOutput(this, "DistributionDomain", { value: `Create an alias alias record for ${SUB}.${URL} to: ${distribution.distributionDomainName}` })
+      new CfnOutput(this, "KEYparam", { value: `Your management KEY is: ${KEY}` })
+      new CfnOutput(this, "URLparam", { value: `Your management URL is: ${SUB}.${URL}` })
     }
 
-    new CfnOutput(this, "BucketDomain", { value: `Create an alias record for ${URL.valueAsString} to: ${redirectBucket.bucketWebsiteDomainName}` })
+    new CfnOutput(this, "BucketDomain", { value: `Create an alias record for ${URL} to: ${redirectBucket.bucketWebsiteDomainName}` })
     new CfnOutput(this, "FunctionURL", { value: `Manage short URLs using this endpoint: ${funcURL.url}` }) // remove in production and enable CORS
     // new CfnOutput(this, "Validation", { value: `Get your CNAME validation record from the deployment output or from: https://us-east-1.console.aws.amazon.com/route53/v2/hostedzones#ListRecordSets/${zone.hostedZoneId}` })
   }
