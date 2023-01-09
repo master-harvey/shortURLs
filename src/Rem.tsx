@@ -8,6 +8,6 @@ export default function Rem() {
     const snap = useSnapshot(store)
     return <Card sx={{ p: 2 }}>
         <Typography variant="h5">Remove a redirect</Typography>
-        <TextField variant='filled' label="Forward Code" id="remCode" sx={{ width: '100%' }} value={snap.remCode} onChange={(e) => store.remCode = e.target.value} />
+        <TextField variant='filled' label="Forward Code" id="remCode" sx={{ width: '100%' }} value={snap.remCode} onChange={(e) => { store.remCode = e.target.value; store.addURL = ""; }} />
     </Card>
 }
