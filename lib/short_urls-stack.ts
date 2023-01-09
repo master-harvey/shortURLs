@@ -5,7 +5,7 @@ import {
   aws_s3 as s3, aws_lambda as lambda, aws_cloudfront as cf,
   aws_codepipeline as codepipeline, aws_secretsmanager as sm,
   aws_route53 as r53, aws_s3_deployment as s3d,
-  CfnOutput, CfnParameter
+  CfnOutput
 } from 'aws-cdk-lib';
 import { Construct } from 'constructs';
 
@@ -39,7 +39,7 @@ export class ShortUrlsStack extends Stack {
       synth: new pipelines.ShellStep('Synth', {
         input: pipelines.CodePipelineSource.gitHub('master-harvey/shortURLs', 'Infrastructure'),
         installCommands: ['npm i -g npm@latest'],
-        commands: ['npm ci', 'npm run build', `npx cdk synth -c URL=${URL} -c CORSurl=${CORS}`]
+        commands: ['npm ci', 'npm run build', `npx cdk synth -c URL=${URL} -c CORSurl=${CORS} -c SUB=${SUB} -c KEY=${KEY}`]
       }),
     })
 
