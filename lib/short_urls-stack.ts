@@ -57,7 +57,7 @@ export class ShortUrlsStack extends Stack {
     //Lambda w/ function URL
     const lamb = new lambda.Function(this, 'Function', {
       functionName: "shortURLs-manager",
-      handler: 'main.handler', environment: { "BUCKET": redirectBucket.bucketName, "KEY": KEY },
+      handler: 'main.handler', environment: { "BUCKET": redirectBucket.bucketName, "KEY": KEY??"" },
       code: lambda.Code.fromAsset('./lambda'),
       runtime: lambda.Runtime.PYTHON_3_9,
       role: new iam.Role(this, "manageRedirects", {
