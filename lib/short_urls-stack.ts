@@ -13,9 +13,9 @@ export class ShortUrlsStack extends Stack {
   constructor(scope: Construct, id: string, props?: StackProps) {
     super(scope, id, props);
 
-    const URL  = this.node.tryGetContext('URL')
-    const SUB  = this.node.tryGetContext('SUB') ?? ""
-    const KEY  = this.node.tryGetContext('KEY') ?? ""
+    const URL = this.node.tryGetContext('URL')
+    const SUB = this.node.tryGetContext('SUB') ?? ""
+    const KEY = this.node.tryGetContext('KEY') ?? ""
     const CORS = this.node.tryGetContext('CORSurl') ?? ""
 
     //  Check URL context
@@ -58,7 +58,7 @@ export class ShortUrlsStack extends Stack {
     //Lambda w/ function URL
     const lamb = new lambda.Function(this, 'Function', {
       functionName: "shortURLs-manager",
-      handler: 'main.handler', environment: { "BUCKET": redirectBucket.bucketName, "KEY": KEY??"" },
+      handler: 'main.handler', environment: { "BUCKET": redirectBucket.bucketName, "KEY": KEY ?? "" },
       code: lambda.Code.fromAsset('./lambda'),
       runtime: lambda.Runtime.PYTHON_3_9,
       role: new iam.Role(this, "manageRedirects", {
@@ -168,7 +168,7 @@ export class ShortUrlsStack extends Stack {
     }
 
     new CfnOutput(this, "BucketDomain", { value: `Create an alias record for ${URL} to: ${redirectBucket.bucketWebsiteDomainName}` })
-    new CfnOutput(this, "FunctionURL", { value: `[SECRET] Manage short URLs using this endpoint: ${funcURL.url}` }) // remove in production and enable CORS
+    new CfnOutput(this, "FunctionURL", { value: `${CORS ? "[SECRET] " : ""}Manage short URLs using this endpoint: ${funcURL.url}` })
     // new CfnOutput(this, "Validation", { value: `Get your CNAME validation record from the deployment output or from: https://us-east-1.console.aws.amazon.com/route53/v2/hostedzones#ListRecordSets/${zone.hostedZoneId}` })
   }
 }
