@@ -42,7 +42,8 @@ def delete(code):
 def handler(event, context):
     """takes an event.body like {"redirectTo": URL, "key":key} or {"redirectFrom": code, "key":key} based on request method (put or delete)"""
     event['body'] = loads(event['body'])
-    if (event['body']['key'] == environ["KEY"]):
+    event['body']
+    if ((environ["KEY"] == "") or event['body']['key'] == environ["KEY"]):
         if (event['requestContext']['http']['method'] == "PUT"):
             if (event['body']['redirectTo'] == "" or type(event['body']['redirectTo']) != type("")):
                 return {"statusCode": 502, "body": "supply a URL", "headers": {"Content-Type": "application/json", "upload_authorized": True}}
