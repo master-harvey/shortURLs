@@ -13,18 +13,19 @@ export class ShortUrlsStack extends Stack {
   constructor(scope: Construct, id: string, props?: StackProps) {
     super(scope, id, props);
 
-    const URL = this.node.tryGetContext('URL')
-    const SUB = this.node.tryGetContext('SUB')
-    const KEY = this.node.tryGetContext('KEY')
+    const URL  = this.node.tryGetContext('URL')
+    const SUB  = this.node.tryGetContext('SUB') ?? ""
+    const KEY  = this.node.tryGetContext('KEY') ?? ""
+    const CORS = this.node.tryGetContext('CORSurl') ?? ""
 
     //  Check URL context
-    if (URL == "") {
+    if (!URL) {
       throw ("You did not supply the URL parameter, add it using the --parameters URL=your.URL CLI syntax")
     } else if (URL.length < 4 || !URL.includes('.')) {
       throw ("The URL parameter must be of the form yourURL.tld")
     }
 
-    if (!this.node.tryGetContext('CORSurl')) {
+    if (!CORS) {
       if (!SUB) { throw ("The UI requires the SUB context variable, add it using the -c SUB=yoursubdomain CLI syntax") }
       if (!KEY) { throw ("The UI requires the KEY context variable, add it using the -c KEY=yourpasskey CLI syntax") }
     }
@@ -38,7 +39,7 @@ export class ShortUrlsStack extends Stack {
       synth: new pipelines.ShellStep('Synth', {
         input: pipelines.CodePipelineSource.gitHub('master-harvey/shortURLs', 'Infrastructure'),
         installCommands: ['npm i -g npm@latest'],
-        commands: ['npm ci', 'npm run build', `npx cdk synth -c CORSurl=${this.node.tryGetContext('CORSurl') ?? ""}`]
+        commands: ['npm ci', 'npm run build', `npx cdk synth -c URL=${URL} -c CORSurl=${CORS}`]
       }),
     })
 
@@ -77,12 +78,12 @@ export class ShortUrlsStack extends Stack {
     const funcURL = lamb.addFunctionUrl({
       authType: lambda.FunctionUrlAuthType.NONE, //Internal key validation
       cors: { //test without cors
-        allowedOrigins: [this.node.tryGetContext('CORSurl') ?? `https://${SUB}.${URL}`], //Accept traffic from CORS url if supplied, else build and accept traffic only from the UI
+        allowedOrigins: [CORS ?? `https://${SUB}.${URL}`], //Accept traffic from CORS url if supplied, else build and accept traffic only from the UI
         allowedMethods: [lambda.HttpMethod.PUT, lambda.HttpMethod.DELETE]
       }
     })
 
-    if (!this.node.tryGetContext('CORSurl')) { //Only build the UI if the CORS url is not supplied
+    if (!CORS) { //Only build the UI if the CORS url is not supplied
       // Management UI bucket
       const UIbucket = new s3.Bucket(this, "UIBucket", {
         bucketName: `shorturls--ui`,
