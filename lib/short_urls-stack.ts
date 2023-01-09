@@ -77,12 +77,12 @@ export class ShortUrlsStack extends Stack {
     const funcURL = lamb.addFunctionUrl({
       authType: lambda.FunctionUrlAuthType.NONE, //Internal key validation
       cors: { //test without cors
-        allowedOrigins: [this.node.tryGetContext('CORSurl') ?? `https://${SUB}.${URL}`],
+        allowedOrigins: [this.node.tryGetContext('CORSurl') ?? `https://${SUB}.${URL}`], //Accept traffic from CORS url if supplied, else build and accept traffic only from the UI
         allowedMethods: [lambda.HttpMethod.PUT, lambda.HttpMethod.DELETE]
       }
     })
 
-    if (!this.node.tryGetContext('CORSurl')) {
+    if (!this.node.tryGetContext('CORSurl')) { //Only build the UI if the CORS url is not supplied
       // Management UI bucket
       const UIbucket = new s3.Bucket(this, "UIBucket", {
         bucketName: `shorturls--ui`,
@@ -167,7 +167,7 @@ export class ShortUrlsStack extends Stack {
     }
 
     new CfnOutput(this, "BucketDomain", { value: `Create an alias record for ${URL} to: ${redirectBucket.bucketWebsiteDomainName}` })
-    new CfnOutput(this, "FunctionURL", { value: `Manage short URLs using this endpoint: ${funcURL.url}` }) // remove in production and enable CORS
+    new CfnOutput(this, "FunctionURL", { value: `[SECRET] Manage short URLs using this endpoint: ${funcURL.url}` }) // remove in production and enable CORS
     // new CfnOutput(this, "Validation", { value: `Get your CNAME validation record from the deployment output or from: https://us-east-1.console.aws.amazon.com/route53/v2/hostedzones#ListRecordSets/${zone.hostedZoneId}` })
   }
 }
