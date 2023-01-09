@@ -82,10 +82,10 @@ export class ShortUrlsStack extends Stack {
 
     const funcURL = lamb.addFunctionUrl({
       authType: lambda.FunctionUrlAuthType.NONE, //Internal key validation
-      // cors: { //test without cors
-      //   allowedOrigins: [`https://${SUB.valueAsString}.${URL.valueAsString}`],
-      //   allowedMethods: [lambda.HttpMethod.PUT, lambda.HttpMethod.DELETE]
-      // }
+      cors: { //test without cors
+        allowedOrigins: [`https://${SUB.valueAsString}.${URL.valueAsString}`],
+        allowedMethods: [lambda.HttpMethod.PUT, lambda.HttpMethod.DELETE]
+      }
     })
 
     // Management UI bucket
@@ -98,21 +98,21 @@ export class ShortUrlsStack extends Stack {
     })
 
     //Cloudfront + Cert for Management UI
-    const zone = new r53.HostedZone(this, "HostedZone", { zoneName: `${SUB.valueAsString}.${URL.valueAsString}` })
-    const cert = new cm.Certificate(this, "UI-Cert", {
-      domainName: URL.valueAsString,
-      certificateName: 'shortURLs-UI',
-      validation: cm.CertificateValidation.fromDns(zone)
-    })
+    // const zone = new r53.HostedZone(this, "HostedZone", { zoneName: `${SUB.valueAsString}.${URL.valueAsString}` })
+    // const cert = new cm.Certificate(this, "UI-Cert", {
+    //   domainName: URL.valueAsString,
+    //   certificateName: 'shortURLs-UI',
+    //   validation: cm.CertificateValidation.fromDns(zone)
+    // })
     const distribution = new cf.CloudFrontWebDistribution(this, 'Distribution', {
-      viewerCertificate: {
-        aliases: [`${SUB.valueAsString}.${URL.valueAsString}`],
-        props: {
-          acmCertificateArn: cert.certificateArn,
-          sslSupportMethod: 'sni-only',
-          minimumProtocolVersion: 'TLSv1.1_2016'
-        }
-      },
+      // viewerCertificate: {
+      //   aliases: [`${SUB.valueAsString}.${URL.valueAsString}`],
+      //   props: {
+      //     acmCertificateArn: cert.certificateArn,
+      //     sslSupportMethod: 'sni-only',
+      //     minimumProtocolVersion: 'TLSv1.1_2016'
+      //   }
+      // },
       originConfigs: [
         {
           s3OriginSource: { s3BucketSource: UIbucket },
@@ -166,55 +166,47 @@ export class ShortUrlsStack extends Stack {
       input: builtCode
     }))
 
+    // invalidation is NON-critical
     // Create the build project that will invalidate the cache | https://docs.aws.amazon.com/cdk/api/v2/docs/aws-cdk-lib.aws_codepipeline_actions.CodeBuildActionProps.html
-    const invalidateBuildProject = new cbd.PipelineProject(this, `InvalidateProject`, {
-      projectName: `shortURLs--Invalidate-Dist`,
-      environment: { buildImage: cbd.LinuxBuildImage.STANDARD_5_0 },
-      buildSpec: cbd.BuildSpec.fromObject({
-        version: '0.2',
-        phases: {
-          build: {
-            commands: [`aws cloudfront create-invalidation --distribution-id ${distribution.distributionId} --paths "/assets"`], //invalidate just the ui files?
-          },
-        },
-      }),
-      role: new iam.Role(this, "invalidationPipelineRole", {
-        roleName: "shortURLs-UI-pipeline-invalidation-role", assumedBy: new iam.ServicePrincipal("codepipeline.amazonaws.com"),
-        inlinePolicies: {
-          "redirect-manager": new iam.PolicyDocument({
-            statements: [new iam.PolicyStatement({
-              actions: ['cloudfront:CreateInvalidation'],
-              resources: [`arn:aws:cloudfront::${this.account}:distribution/${distribution.distributionId}`],
-            })]
-          })
-        }
-      })
-    });
+    // const invalidationRole = new iam.Role(this, "invalidationPipelineRole", {
+    //   roleName: "shortURLs-UI-build-invalidation-role", assumedBy: new iam.ServicePrincipal("codebuild.amazonaws.com"),
+    //   inlinePolicies: {
+    //     "redirect-manager": new iam.PolicyDocument({
+    //       statements: [new iam.PolicyStatement({
+    //         actions: ['cloudfront:CreateInvalidation'],
+    //         resources: [`arn:aws:cloudfront::${this.account}:distribution/${distribution.distributionId}`],
+    //       })]
+    //     })
+    //   }
+    // })
+    // const invalidateBuildProject = new cbd.PipelineProject(this, `InvalidateProject`, {
+    //   projectName: `shortURLs--Invalidate-Dist`,
+    //   environment: { buildImage: cbd.LinuxBuildImage.STANDARD_5_0 },
+    //   buildSpec: cbd.BuildSpec.fromObject({
+    //     version: '0.2',
+    //     phases: {
+    //       build: {
+    //         commands: [`aws cloudfront create-invalidation --distribution-id ${distribution.distributionId} --paths "/assets"`], //invalidate just the ui files?
+    //       },
+    //     },
+    //   }),
+    //   role: invalidationRole
+    // });
 
-    // invalidate cloudfront cache for 'immediate' redeployment
-    const invalidateStage = cPipeline.addStage({ stageName: "Invalidate-CF-Cache" })
-    invalidateStage.addAction(new cpa.CodeBuildAction({
-      actionName: 'InvalidateCache',
-      project: invalidateBuildProject,
-      input: builtCode,
-      role: new iam.Role(this, "invalidationBuildRole", {
-        roleName: "shortURLs-UI-build-invalidation-role", assumedBy: new iam.ServicePrincipal("codebuild.amazonaws.com"),
-        inlinePolicies: {
-          "redirect-manager": new iam.PolicyDocument({
-            statements: [new iam.PolicyStatement({
-              actions: ['cloudfront:CreateInvalidation'],
-              resources: [`arn:aws:cloudfront::${this.account}:distribution/${distribution.distributionId}`],
-            })]
-          })
-        }
-      })
-    }))
+    // // invalidate cloudfront cache for 'immediate' redeployment
+    // const invalidateStage = cPipeline.addStage({ stageName: "Invalidate-CF-Cache" })
+    // invalidateStage.addAction(new cpa.CodeBuildAction({
+    //   actionName: 'InvalidateCache',
+    //   project: invalidateBuildProject,
+    //   input: builtCode,
+    //   role: invalidationRole
+    // }))
     /*  -- Finish Pipeline --  */
 
-    new CfnOutput(this, "FunctionURL", { value: `[DEV] Manage short URLs using this endpoint: ${funcURL.url}` }) // remove in production and enable CORS
     new CfnOutput(this, "DistributionDomain", { value: `Set your DNS alias record for the url subdomain (${SUB.valueAsString}.${URL.valueAsString}) to: ${distribution.distributionDomainName}` })
-    new CfnOutput(this, "Validation", { value: `Get your CNAME validation record from the deployment output or from: https://us-east-1.console.aws.amazon.com/route53/v2/hostedzones#ListRecordSets/${zone.hostedZoneId}` })
     new CfnOutput(this, "BucketDomain", { value: `Create an alias record at ${URL} to: ${redirectBucket.bucketWebsiteDomainName}` })
+    new CfnOutput(this, "FunctionURL", { value: `[DEV] Manage short URLs using this endpoint: ${funcURL.url}` }) // remove in production and enable CORS
+    // new CfnOutput(this, "Validation", { value: `Get your CNAME validation record from the deployment output or from: https://us-east-1.console.aws.amazon.com/route53/v2/hostedzones#ListRecordSets/${zone.hostedZoneId}` })
     new CfnOutput(this, "KEYparam", { value: `Your management KEY is: ${KEY.valueAsString}` })
     new CfnOutput(this, "URLparam", { value: `Your management URL is: ${SUB.valueAsString}.${URL.valueAsString}` })
   }
