@@ -141,7 +141,10 @@ export class ShortUrlsStack extends Stack {
       const buildStage = cPipeline.addStage({ stageName: "Build" })
       const buildProject = new cbd.PipelineProject(this, "shortURLs-UI--Build-Project", {
         projectName: `shortURLs--UI-Builder`,
-        environment: { buildImage: cbd.LinuxBuildImage.STANDARD_5_0 },
+        environment: {
+          buildImage: cbd.LinuxBuildImage.STANDARD_5_0,
+          environmentVariables: { functionURL: { value: funcURL.url }, bucketURL: { value: redirectBucket.bucketDomainName } }
+        },
         concurrentBuildLimit: 1
       })
 
