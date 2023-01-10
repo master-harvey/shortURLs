@@ -17,6 +17,18 @@ export class ShortUrlsStack extends Stack {
     const SUB = this.node.tryGetContext('SUB') ?? ""
     const KEY = this.node.tryGetContext('KEY') ?? ""
     const CORS = this.node.tryGetContext('CORSurl') ?? ""
+    const IAM = this.node.tryGetContext('IAM') ?? ""
+    // const IAMuser = this.node.tryGetContext('IAMuser') ?? ""
+    // const IAMrole = this.node.tryGetContext('IAMrole') ?? ""
+    // const IAMgroup = this.node.tryGetContext('IAMgroup') ?? ""
+    // const IAMlambda = this.node.tryGetContext('IAMlambda') ?? ""
+
+    // var IAM: any
+    // if (IAMlambda.length > 0) { IAM = lambda.Function.fromFunctionArn(this, "AuthorizedLambda", IAMlambda) }
+    // else if (IAMuser.length > 0) { IAM = iam.User.fromUserArn(this, "AuthorizedUser", IAMuser) }
+    // else if (IAMrole.length > 0) { IAM = iam.Role.fromRoleArn(this, "AuthorizedRole", IAMrole) }
+    // else if (IAMgroup.length > 0) { IAM = iam.Group.fromGroupArn(this, "AuthorizedGroup", IAMgroup) }
+    // else { const IAM = "" }
 
     //  Check URL context
     if (!URL) {
@@ -40,7 +52,7 @@ export class ShortUrlsStack extends Stack {
       synth: new pipelines.ShellStep('Synth', {
         input: pipelines.CodePipelineSource.gitHub('master-harvey/shortURLs', 'Infrastructure'),
         installCommands: ['npm i -g npm@latest'],
-        commands: ['npm ci', 'npm run build', `npx cdk synth -c URL=${URL} -c CORSurl=${CORS} -c SUB=${SUB} -c KEY=${KEY}`]
+        commands: ['npm ci', 'npm run build', `npx cdk synth -c URL=${URL} -c CORSurl=${CORS} -c SUB=${SUB} -c KEY=${KEY}`] // -c IAMuser=${IAMuser} -c IAMrole=${IAMrole} -c IAMgroup=${IAMgroup} -c IAMlambda=${IAMlambda}`]
       }),
     })
 
@@ -57,9 +69,10 @@ export class ShortUrlsStack extends Stack {
     new s3d.BucketDeployment(this, 'DeployFiles', { sources: [s3d.Source.asset('./src')], destinationBucket: redirectBucket });
 
     //Lambda w/ function URL
+    const functionName = "shortURLs-manager"
     const lamb = new lambda.Function(this, 'Function', {
-      functionName: "shortURLs-manager",
-      handler: 'main.handler', environment: { "BUCKET": redirectBucket.bucketName, "KEY": KEY ?? "" },
+      functionName,
+      handler: 'main.handler', environment: { "BUCKET": redirectBucket.bucketName, "KEY": KEY },
       code: lambda.Code.fromAsset('./lambda'),
       runtime: lambda.Runtime.PYTHON_3_9,
       role: new iam.Role(this, "manageRedirects", {
@@ -75,17 +88,27 @@ export class ShortUrlsStack extends Stack {
         }
       })
     });
-
+    
     const funcURL = lamb.addFunctionUrl({
-      authType: lambda.FunctionUrlAuthType.NONE, //Internal key validation
-      cors: { //test without cors
+      authType: IAM ? lambda.FunctionUrlAuthType.AWS_IAM : lambda.FunctionUrlAuthType.NONE, //Internal KEY validation if IAM arn isn't supplied
+      cors: (!IAM || !CORS) ? {} : { // blank CORS config for IAM and headless usage //test without cors
         allowedOrigins: [CORS == "" ? `https://${SUB}.${URL}` : CORS], //Accept traffic from CORS url if supplied, else build and accept traffic only from the UI
         allowedMethods: [lambda.HttpMethod.PUT, lambda.HttpMethod.DELETE],
         allowedHeaders: ["application/json"]
       }
     })
+    
+    lamb.role?.attachInlinePolicy(new iam.Policy(this, "functionURLexecutionPolicy", {
+      document: new iam.PolicyDocument({
+        statements: [new iam.PolicyStatement({
+          principals: [new iam.ArnPrincipal(IAM)],
+          actions: ['lambda:InvokeFunctionUrl'],
+          resources: [lamb.functionArn]
+        })],
+      })
+    }))
 
-    if (!CORS) { //Only build the UI if the CORS url is not supplied
+    if (!CORS && !IAM) { //Only build the UI if the CORS url and IAM variables are not supplied
       // Management UI bucket
       const UIbucket = new s3.Bucket(this, "UIBucket", {
         bucketName: `shorturls--ui`,
