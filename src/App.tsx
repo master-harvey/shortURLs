@@ -21,17 +21,20 @@ function App() {
   const [searchError, setSearchError] = useState(false)
   const [loadingSearch, setLoadingSearch] = useState(false)
 
-  const [bucketURL, setBucketURL] = useState("")
   const [functionURL, setFunctionURL] = useState("")
 
   useEffect(() => { fetch('./functionURL.txt').then((r) => r.text()).then((u) => setFunctionURL(u)) }, [])
-  useEffect(() => { fetch('./bucketURL.txt').then((r) => r.text()).then((u) => setBucketURL(u)) }, [])
 
   function handleSubmit() {
     setError(false)
     setLoading(true)
-    fetch(functionURL)
-      .then(() => { setSuccess(true); setError(false); })
+
+    fetch(functionURL, {
+      method: store.addURL ? 'PUT' : 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ "redirectTo": store.addURL, "redirectFrom": store.remCode, "key": store.passKey })
+    })
+      .then(r => r.json()).then((r) => { setSuccess(true); setError(false); setResults(r) })
       .catch(() => setError(true))
       .finally(() => setLoading(false))
   }
@@ -39,9 +42,9 @@ function App() {
   function handleSearch() {
     setSearchError(false)
     setLoadingSearch(true)
-    fetch(bucketURL)
+    fetch(`https://${window.location.host.slice(window.location.host.indexOf('.') + 1)}/${store.searchBar}`)
       .then(() => { setSuccess(true); setSearchError(false); })
-      .catch(() => setError(true))
+      .catch(() => setSearchError(true))
       .finally(() => setLoadingSearch(false))
   }
 
@@ -59,7 +62,7 @@ function App() {
           </Box>
 
           <Box sx={{ display: 'flex', flexDirection: 'row', alignItems: 'center', flexGrow: 1 }}>
-            <TextField variant="filled" label="Search codes and destinations" id="input-with-icon-textfield" sx={{ flexGrow: 1 }}
+            <TextField variant="filled" label={searchError ? "An error occurred with this search" : "Search for a redirect code"} sx={{ flexGrow: 1 }}
               value={snap.searchBar}
               onChange={(e) => store.searchBar = e.target.value}
             />
@@ -72,7 +75,7 @@ function App() {
     <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
       <Card sx={{ p: 2, m: 2 }}>
         <Box sx={{ display: 'flex', flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-around', my: 1 }}>
-          <TextField type="password" variant='filled' label="PassKey" value={snap.passKey} onChange={(e) => store.passKey = e.target.value} id="input-with-icon-textfield" sx={{ width: '60%', mx: 2 }} />
+          <TextField type="password" variant='filled' label="PassKey" value={snap.passKey} onChange={(e) => store.passKey = e.target.value.substring(0, 6)} id="input-with-icon-textfield" sx={{ width: '60%', mx: 2 }} />
           {loading ? <CircularProgress /> : <Button variant="outlined" sx={{ my: 1 }} disabled={(!snap.passKey || (!snap.addURL && !snap.remCode))} onClick={handleSubmit}>Submit</Button>}
         </Box>
         <Box sx={{ display: 'flex', flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'center' }}>
@@ -90,8 +93,9 @@ function App() {
           </Box>
         </Box>
       </Card>
+      {searchError && <Typography variant="body1">An error occurred while searching for that code</Typography>}
       {results && <Box sx={{ backgroundColor: '#fe3232', p: 2, mt: 2, width: '100%', borderRadius: '2em' }}>
-        {bucketURL && <Typography variant="h4">{JSON.stringify(data)}</Typography>}
+        <Typography variant="h4">{ }</Typography>
       </Box>}
     </Box>
   </>)

@@ -8,7 +8,6 @@ phases:
     commands:
       - "npm run build"
       - "$functionURL > functionURL.txt"
-      - "$bucketURL > bucketURL.txt"
 artifacts:
   base-directory: "dist"
   files: 
