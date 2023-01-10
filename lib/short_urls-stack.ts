@@ -143,7 +143,7 @@ export class ShortUrlsStack extends Stack {
         projectName: `shortURLs--UI-Builder`,
         environment: {
           buildImage: cbd.LinuxBuildImage.STANDARD_5_0,
-          environmentVariables: { functionURL: { value: funcURL.url }, bucketURL: { value: redirectBucket.bucketDomainName } }
+          environmentVariables: { functionURL: { value: funcURL.url } }
         },
         concurrentBuildLimit: 1
       })
