@@ -15,9 +15,9 @@ function App() {
 
   const [error, setError] = useState(false)
   const [loading, setLoading] = useState(false)
-  const [success, setSuccess] = useState(false)
+  const [result, setResult] = useState({})
 
-  const [results, setResults] = useState(false)
+  const [searchResult, setSearchResult] = useState({})
   const [searchError, setSearchError] = useState(false)
   const [loadingSearch, setLoadingSearch] = useState(false)
 
@@ -34,7 +34,7 @@ function App() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ "redirectTo": store.addURL, "redirectFrom": store.remCode, "key": store.passKey })
     })
-      .then(r => r.json()).then((r) => { setSuccess(true); setError(false); setResults(r) })
+      .then(r => r.json()).then((r) => { setError(false); setResult(r) })
       .catch(() => setError(true))
       .finally(() => setLoading(false))
   }
@@ -43,7 +43,7 @@ function App() {
     setSearchError(false)
     setLoadingSearch(true)
     fetch(`https://${window.location.host.slice(window.location.host.indexOf('.') + 1)}/${store.searchBar}`)
-      .then(() => { setSuccess(true); setSearchError(false); })
+      .then(r => r.json()).then((r) => { setSearchError(false); setSearchResult(r); })
       .catch(() => setSearchError(true))
       .finally(() => setLoadingSearch(false))
   }
@@ -64,7 +64,7 @@ function App() {
           <Box sx={{ display: 'flex', flexDirection: 'row', alignItems: 'center', flexGrow: 1 }}>
             <TextField variant="filled" label={searchError ? "An error occurred with this search" : "Search for a redirect code"} sx={{ flexGrow: 1 }}
               value={snap.searchBar}
-              onChange={(e) => store.searchBar = e.target.value}
+              onChange={(e) => { store.searchBar = e.target.value; setSearchError(false); setLoadingSearch(false); }}
             />
             {loadingSearch ? <CircularProgress sx={{ mr: 1, ml: 2, color: '#111' }} /> : <IconButton sx={{ p: 1, mx: 1 }} onClick={handleSearch}><SearchIcon /></IconButton>}
           </Box>
@@ -82,19 +82,19 @@ function App() {
           <Box sx={{ m: 1, flexGrow: 1 }}>
             <Card sx={{ p: 2 }}>
               <Typography variant="h5">Add a redirect</Typography>
-              <TextField variant='filled' label="Forward URL" id="addURL" sx={{ width: '100%' }} value={snap.addURL} onChange={(e) => { store.addURL = e.target.value; store.remCode = ""; }} />
+              <TextField variant='filled' label="Forward URL" id="addURL" sx={{ width: '100%' }} value={snap.addURL} onChange={(e) => { store.addURL = e.target.value; store.remCode = ""; setLoading(false); setError(false); }} />
             </Card>
           </Box>
           <Box sx={{ m: 1, flexGrow: 1 }}>
             <Card sx={{ p: 2 }}>
               <Typography variant="h5">Remove a redirect</Typography>
-              <TextField variant='filled' label="Forward Code" id="remCode" sx={{ width: '100%' }} value={snap.remCode} onChange={(e) => { store.remCode = e.target.value; store.addURL = ""; }} />
+              <TextField variant='filled' label="Forward Code" id="remCode" sx={{ width: '100%' }} value={snap.remCode} onChange={(e) => { store.remCode = e.target.value; store.addURL = ""; setLoading(false); setError(false); }} />
             </Card>
           </Box>
         </Box>
       </Card>
-      {searchError && <Typography variant="body1">An error occurred while searching for that code</Typography>}
-      {results && <Box sx={{ backgroundColor: '#fe3232', p: 2, mt: 2, width: '100%', borderRadius: '2em' }}>
+      {error && <Typography variant="body1">An error occurred while {snap.addURL ? "adding" : "removing"} that code</Typography>}
+      {searchResult && <Box sx={{ backgroundColor: '#fe3232', p: 2, mt: 2, width: '100%', borderRadius: '2em' }}>
         <Typography variant="h4">{ }</Typography>
       </Box>}
     </Box>
