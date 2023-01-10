@@ -22,7 +22,7 @@ function App() {
   function handleSubmit() {
     setError(false); setLoading(true); setResult(false);
 
-    fetch("https://t3vahktnueobd4im2mvv7dzgbm0mcuss.lambda-url.us-east-1.on.aws/"/*functionURL*/, {
+    fetch(functionURL, {
       method: store.addURL ? 'PUT' : 'DELETE',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ "redirectTo": store.addURL, "redirectFrom": store.remCode, "key": store.passKey })
@@ -64,7 +64,7 @@ function App() {
         </Box>
         <Box sx={{ display: 'flex', flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-around', my: 1 }}>
           <TextField type="password" variant='filled' label="PassKey" value={snap.passKey} onChange={(e) => store.passKey = e.target.value.substring(0, 6)} id="input-with-icon-textfield" sx={{ width: '60%', mx: 2 }} />
-          {loading ? <CircularProgress /> : <Button variant="outlined" sx={{ my: 1 }} disabled={(!snap.passKey && /*||*/ (!snap.addURL && !snap.remCode))} onClick={handleSubmit}>Submit</Button>}
+          {loading ? <CircularProgress /> : <Button variant="outlined" sx={{ my: 1 }} disabled={(!snap.passKey || (!snap.addURL && !snap.remCode))} onClick={handleSubmit}>Submit</Button>}
         </Box>
       </Card>
       {error && <Typography variant="body1">An error occurred while {snap.addURL ? "adding" : "removing"} that redirect</Typography>}
