@@ -26,6 +26,7 @@ export class ShortUrlsStack extends Stack {
     }
 
     if (!CORS) {
+      console.log("CORSurl context variable not supplied, building UI")
       if (!SUB) { throw ("The UI requires the SUB context variable, add it using the -c SUB=yoursubdomain CLI syntax") }
       if (!KEY) { throw ("The UI requires the KEY context variable, add it using the -c KEY=yourpasskey CLI syntax") }
     }
