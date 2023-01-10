@@ -79,7 +79,8 @@ export class ShortUrlsStack extends Stack {
       authType: lambda.FunctionUrlAuthType.NONE, //Internal key validation
       cors: { //test without cors
         allowedOrigins: [CORS ?? `https://${SUB}.${URL}`], //Accept traffic from CORS url if supplied, else build and accept traffic only from the UI
-        allowedMethods: [lambda.HttpMethod.PUT, lambda.HttpMethod.DELETE]
+        allowedMethods: [lambda.HttpMethod.PUT, lambda.HttpMethod.DELETE],
+        allowedHeaders: ["application/json"]
       }
     })
 
