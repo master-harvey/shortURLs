@@ -20,7 +20,7 @@ export class ShortUrlsStack extends Stack {
 
     //  Check URL context
     if (!URL) {
-      throw ("You did not supply the URL parameter, add it using the --parameters URL=your.URL CLI syntax")
+      throw ("You did not supply the URL context variable, add it using the -c URL=your.URL CLI syntax")
     } else if (URL.length < 4 || !URL.includes('.')) {
       throw ("The URL parameter must be of the form yourURL.tld")
     }
