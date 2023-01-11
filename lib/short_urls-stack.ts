@@ -13,34 +13,21 @@ export class ShortUrlsStack extends Stack {
   constructor(scope: Construct, id: string, props?: StackProps) {
     super(scope, id, props);
 
-    const URL = this.node.tryGetContext('URL')
-    const SUB = this.node.tryGetContext('SUB') ?? ""
-    const KEY = this.node.tryGetContext('KEY') ?? ""
-    const CORS = this.node.tryGetContext('CORSurl') ?? ""
-    const IAM = this.node.tryGetContext('IAM') ?? ""
-    // const IAMuser = this.node.tryGetContext('IAMuser') ?? ""
-    // const IAMrole = this.node.tryGetContext('IAMrole') ?? ""
-    // const IAMgroup = this.node.tryGetContext('IAMgroup') ?? ""
-    // const IAMlambda = this.node.tryGetContext('IAMlambda') ?? ""
-
-    // var IAM: any
-    // if (IAMlambda.length > 0) { IAM = lambda.Function.fromFunctionArn(this, "AuthorizedLambda", IAMlambda) }
-    // else if (IAMuser.length > 0) { IAM = iam.User.fromUserArn(this, "AuthorizedUser", IAMuser) }
-    // else if (IAMrole.length > 0) { IAM = iam.Role.fromRoleArn(this, "AuthorizedRole", IAMrole) }
-    // else if (IAMgroup.length > 0) { IAM = iam.Group.fromGroupArn(this, "AuthorizedGroup", IAMgroup) }
-    // else { const IAM = "" }
+    const URL: string = this.node.tryGetContext('URL')
+    const SUB: string = this.node.tryGetContext('SUB') ?? ""
+    const KEY: string = this.node.tryGetContext('KEY') ?? ""
+    const CORS: string = this.node.tryGetContext('CORSurl') ?? ""
+    const IAM: string = this.node.tryGetContext('IAM') ?? ""
 
     //  Check URL context
-    if (!URL) {
-      throw ("You did not supply the URL context variable, add it using the -c URL=your.URL CLI syntax")
-    } else if (URL.length < 4 || !URL.includes('.')) {
-      throw ("The URL parameter must be of the form yourURL.tld")
-    }
+    if (!URL) { throw ("You did not supply the URL context variable, add it using the -c URL=your.URL CLI syntax") }
+    if (URL.length < 4 || !URL.includes('.')) { throw ("The URL parameter must be of the form yourURL.tld") }
 
-    if (!CORS && !IAM) {
-      console.log("CORSurl context variable not supplied, building UI")
-      if (!SUB) { throw ("The UI requires the SUB context variable, add it using the -c SUB=yoursubdomain CLI syntax") }
+    if (!CORS && !IAM && !SUB) { throw ("You must specify either the arn with permissions to invoke this URL using -c IAM=, an origin to accept traffic from using -c CORSurl=, or a SUBdomain and passKEY using -c SUB= -c KEY=") }
+
+    if (SUB) {
       if (!KEY) { throw ("The UI requires the KEY context variable, add it using the -c KEY=yourpasskey CLI syntax") }
+      console.log("CORSurl context variable not supplied, building UI")
     }
 
     //  CDK pipeline for this deployment
@@ -52,7 +39,7 @@ export class ShortUrlsStack extends Stack {
       synth: new pipelines.ShellStep('Synth', {
         input: pipelines.CodePipelineSource.gitHub('master-harvey/shortURLs', 'Infrastructure'),
         installCommands: ['npm i -g npm@latest'],
-        commands: ['npm ci', 'npm run build', `npx cdk synth -c URL=${URL} -c CORSurl=${CORS} -c SUB=${SUB} -c KEY=${KEY}`] // -c IAMuser=${IAMuser} -c IAMrole=${IAMrole} -c IAMgroup=${IAMgroup} -c IAMlambda=${IAMlambda}`]
+        commands: ['npm ci', 'npm run build', `npx cdk synth -c URL=${URL} -c CORSurl=${CORS} -c SUB=${SUB} -c KEY=${KEY} -c IAM=${IAM}`]
       }),
     })
 
@@ -70,45 +57,45 @@ export class ShortUrlsStack extends Stack {
 
     //Lambda w/ function URL
     const functionName = "shortURLs-manager"
+    const lambdaRole = new iam.Role(this, "manageRedirects", {
+      roleName: "shortURLs-manager-role", assumedBy: new iam.ServicePrincipal("lambda.amazonaws.com"),
+      managedPolicies: [iam.ManagedPolicy.fromAwsManagedPolicyName("service-role/AWSLambdaBasicExecutionRole")],
+      inlinePolicies: {
+        "redirect-manager": new iam.PolicyDocument({
+          statements: [new iam.PolicyStatement({
+            actions: ['s3:PutObject', 's3:DeleteObject'],
+            resources: [redirectBucket.bucketArn, `${redirectBucket.bucketArn}/*`]
+          })],
+        })
+      }
+    })
+    if (IAM) {
+      lambdaRole.attachInlinePolicy(new iam.Policy(this, "IAMauth", {
+        document: new iam.PolicyDocument({
+          statements: [new iam.PolicyStatement({
+            actions: ['lambda:InvokeFunctionURL'],
+            resources: [IAM]
+          })]
+        })
+      }))
+    }
+
     const lamb = new lambda.Function(this, 'Function', {
-      functionName,
       handler: 'main.handler', environment: { "BUCKET": redirectBucket.bucketName, "KEY": KEY },
-      code: lambda.Code.fromAsset('./lambda'),
-      runtime: lambda.Runtime.PYTHON_3_9,
-      role: new iam.Role(this, "manageRedirects", {
-        roleName: "shortURLs-manager-role", assumedBy: new iam.ServicePrincipal("lambda.amazonaws.com"),
-        managedPolicies: [iam.ManagedPolicy.fromAwsManagedPolicyName("service-role/AWSLambdaBasicExecutionRole")],
-        inlinePolicies: {
-          "redirect-manager": new iam.PolicyDocument({
-            statements: [new iam.PolicyStatement({
-              actions: ['s3:PutObject', 's3:DeleteObject'],
-              resources: [redirectBucket.bucketArn, `${redirectBucket.bucketArn}/*`],
-            })],
-          })
-        }
-      })
+      functionName, code: lambda.Code.fromAsset('./lambda'), runtime: lambda.Runtime.PYTHON_3_9,
+      role: lambdaRole
     });
-    
+
     const funcURL = lamb.addFunctionUrl({
-      authType: IAM ? lambda.FunctionUrlAuthType.AWS_IAM : lambda.FunctionUrlAuthType.NONE, //Internal KEY validation if IAM arn isn't supplied
-      cors: (!IAM || !CORS) ? {} : { // blank CORS config for IAM and headless usage //test without cors
-        allowedOrigins: [CORS == "" ? `https://${SUB}.${URL}` : CORS], //Accept traffic from CORS url if supplied, else build and accept traffic only from the UI
+      authType: IAM ? lambda.FunctionUrlAuthType.AWS_IAM : lambda.FunctionUrlAuthType.NONE, //CORS & Internal KEY validation if IAM arn isn't supplied
+      cors: (!SUB && !CORS) ? undefined : { // blank CORS config for IAM and headless usage
+        allowedOrigins: [CORS, SUB ? `https://${SUB}.${URL}` : ''].filter(i => i.length > 0),
         allowedMethods: [lambda.HttpMethod.PUT, lambda.HttpMethod.DELETE],
         allowedHeaders: ["application/json"]
       }
     })
-    
-    lamb.role?.attachInlinePolicy(new iam.Policy(this, "functionURLexecutionPolicy", {
-      document: new iam.PolicyDocument({
-        statements: [new iam.PolicyStatement({
-          principals: [new iam.ArnPrincipal(IAM)],
-          actions: ['lambda:InvokeFunctionUrl'],
-          resources: [lamb.functionArn]
-        })],
-      })
-    }))
 
-    if (!CORS && !IAM) { //Only build the UI if the CORS url and IAM variables are not supplied
+    if (SUB) { //build the UI if the subdomain is supplied
       // Management UI bucket
       const UIbucket = new s3.Bucket(this, "UIBucket", {
         bucketName: `shorturls--ui`,
@@ -191,12 +178,15 @@ export class ShortUrlsStack extends Stack {
       }))
       /*  -- Finish Pipeline --  */
       new CfnOutput(this, "DistributionDomain", { value: `Create an alias alias record for ${SUB}.${URL} to: ${distribution.distributionDomainName}` })
-      new CfnOutput(this, "KEYparam", { value: `Your management KEY is: ${KEY}` })
-      new CfnOutput(this, "URLparam", { value: `Your management URL is: ${SUB}.${URL}` })
+      new CfnOutput(this, "Validation", { value: `Get your CNAME validation record from the deployment output or from: https://us-east-1.console.aws.amazon.com/route53/v2/hostedzones#ListRecordSets/${zone.hostedZoneId}` })
+      new CfnOutput(this, "KEY", { value: `[SECRET] Your management KEY is: ${KEY}` })
+      new CfnOutput(this, "SUB", { value: `[SECRET] Your management URL is: ${SUB}.${URL}` })
     }
 
+    if (IAM) { new CfnOutput(this, "IAM", { value: `Access to your function URL has been granted to the ARN: ${IAM}` }) }
+    if (CORS) { new CfnOutput(this, "CORSurl", { value: `[SECRET] CORS header allows traffic rom this endpoint: ${CORS}` }) }
+    new CfnOutput(this, "URL", { value: `Your short URL is: ${URL}` })
     new CfnOutput(this, "BucketDomain", { value: `Create an alias record for ${URL} to: ${redirectBucket.bucketWebsiteDomainName}` })
-    new CfnOutput(this, "FunctionURL", { value: `${CORS ? "[SECRET] " : ""}Manage short URLs using this endpoint: ${funcURL.url}` })
-    // new CfnOutput(this, "Validation", { value: `Get your CNAME validation record from the deployment output or from: https://us-east-1.console.aws.amazon.com/route53/v2/hostedzones#ListRecordSets/${zone.hostedZoneId}` })
+    new CfnOutput(this, "FunctionURL", { value: `${!SUB ? "[SECRET] " : ""}Manage short URLs using this endpoint: ${funcURL.url}` })
   }
 }

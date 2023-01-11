@@ -18,5 +18,8 @@ To run this deployment without the UI you can supply the CORSurl context variabl
 
 `cdk deploy -c CORSurl=myapp.tld -c URL=yoururl.tld`
 
+You can also provide an ARN of a lambda URL, or IAM user, group, or role to setup IAM authentication with your lambda URL
 
-Thinking of adding authorized apigw to replace lambda URL.
+`cdk deploy -c IAM=arn:aws:... -c URL=yoururl.tld`
+
+Thinking of adding authorized apigw to replace lambda+URL.
